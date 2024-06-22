@@ -1,6 +1,7 @@
 from pathlib import Path
 import os
-# os.environ["CUDA_VISIBLE_DEVICES"] = "4,5,6,7"
+import numpy as np
+import pandas as pd
 import torch
 from time import time
 from tools.torchtools import set_seed
@@ -19,7 +20,28 @@ MODEL_MAP = {
     'resnet50':resnet_50,
     'lc':LC
 }
+def is_metrics_col(k:str)->bool:
+    
+    if 'recall' in k or \
+        'f1' in k or \
+        'precision' in k or\
+        'accuracy' in k:
+    
+        return True
+    
+    return False
 
+def cross_validation_table(label_map:dict[str, int])->dict[str, list]:
+    cv_validation_table = {}
+    cv_validation_table['fold'] = []
+    for l,i in label_map.items():
+        cv_validation_table[f"{i}_right"] = [] 
+        cv_validation_table[f"{i}_gt"] = []
+        cv_validation_table[f"{i}_recall"] = []
+    cv_validation_table['marco_recall'] = []
+    cv_validation_table['accuracy'] = []
+    cv_validation_table['marco_f1'] = []
+    return cv_validation_table
 
 def parsing():
     p = argparse.ArgumentParser()
@@ -58,6 +80,8 @@ if __name__ == "__main__":
     ckpt_dir = Path(args.ckpt_dir)
     ckpt_dir.mkdir(parents=True, exist_ok=True)
     
+    cv_table = cross_validation_table(label_map=label_map)
+
     for fi, fold in enumerate(data_table): 
         
         dataset = get_datasets(
@@ -122,9 +146,31 @@ if __name__ == "__main__":
             print(f"accuracy : {acc:.3f}, f1 : {f1:.3f}")
             print(f"recall : {recall:.3f}")
             print(cls_recall)
+            
+            cv_table['fold'].append(fi)
+            for type_i, r in cls_recall.items():
+                cv_table[f"{type_i}_right"].append(r[0])
+                cv_table[f"{type_i}_gt"].append(r[1])
+                cv_table[f"{type_i}_recall"].append(r[2])
+            cv_table['marco_recall'].append(recall)
+            cv_table['accuracy'].append(acc)
+            cv_table['marco_f1'].append(f1)
+            
+
             if not args.local_test :
                 error_df.to_csv(ckpt_dir/f"{fi}_valid_error.csv",index=False)
                 pred_df.to_csv(ckpt_dir/f"{fi}_valid_pred.csv",index=False)
             else:
                 pred_df.to_csv("local.csv",index=False)
 
+    if len(cv_table) and not args.no_valid:
+        
+        for k in cv_table:
+            if k == "fold":
+                cv_table[k].append("avg")
+                continue
+            mean_metrics = np.mean(cv_table[k]) if is_metrics_col(k) else "-"
+            cv_table[k].append(mean_metrics)
+   
+        cv_table = pd.DataFrame(cv_table)
+        cv_table.to_csv(ckpt_dir/f"valid_metrics.csv",index=False)        
