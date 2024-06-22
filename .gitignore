@@ -1,4 +1,5 @@
 */*/*.pyc
 */*/*.pt
 .vscode
-ckpt/*
+dataset/**/*.jpg
+ckpt/**/ 
