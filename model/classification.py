@@ -83,10 +83,10 @@ def forward_one_epoch(
             is_ci_idx = np.where(gt_array == ci)[0]
             pred_ci = pred_array[is_ci_idx]
             correct = np.where(pred_ci == ci)[0]
-            cls_recall_map[int(ci)] = [
-                f"{len(correct)}/{len(is_ci_idx)}",
+            cls_recall_map[int(ci)] = (
+                len(correct), len(is_ci_idx), 
                 cls_recall[ci]
-            ]
+            )
         
         ret.append(cls_recall_map)
     
@@ -101,7 +101,7 @@ def train(model:torch.nn.Module, dataset:dict[str, Big_Data_IMG], epochs:int = 2
     
     def print_cls_metrics(t:dict):
         for k,v in t.items():
-            print(f"{k} : {v[0]}={v[1]:.3f}")
+            print(f"{k} : {v[0]}/{v[1]}={v[2]:.3f}")
 
     
     dev = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -200,7 +200,7 @@ def train(model:torch.nn.Module, dataset:dict[str, Big_Data_IMG], epochs:int = 2
 
 
 @torch.no_grad()
-def test(model:nn.Module, test_dataset:Big_Data_IMG, dev, batchsize = 40) -> tuple[float, float, float, dict[str, Any], pd.DataFrame, pd.DataFrame]:
+def test(model:nn.Module, test_dataset:Big_Data_IMG, dev, batchsize = 40) -> tuple[float, float, float, dict[int, tuple], pd.DataFrame, pd.DataFrame]:
     
     model = model.eval().to(device=dev)
     testloader = DataLoader(dataset=test_dataset, batch_size=batchsize) 
