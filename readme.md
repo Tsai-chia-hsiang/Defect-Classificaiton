@@ -2,7 +2,7 @@
 
 ## Method :
 
-## Navie Resnet50 to classification:
+## Use simple resnet50 for classification:
 5-fold cross-validation
 
 - Baseline : 
