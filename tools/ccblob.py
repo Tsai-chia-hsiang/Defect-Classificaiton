@@ -1,4 +1,4 @@
-from typing import Literal, Any
+from typing import Literal, Any, Iterable
 import cv2
 import numpy as np
 
@@ -59,8 +59,14 @@ class ConnectedComponetBlob():
         self.density_lb = density_lowerbound
         self.low_peak_thr = np.array([blob_area_lowerbound, density_lowerbound])
     
-    def __call__(self, img:np.ndarray, return_type:Literal["mask", "bbox"]="bbox", nms:bool=True, input_color_mode:Literal["RGB","BGR"]="BGR") -> tuple[int, np.ndarray] | list[dict[str, Any]]:
-            
+    def __call__(self, img:np.ndarray, return_type:Literal["mask", "bbox"]="bbox", nms:bool=True, input_color_mode:Literal["RGB","BGR"]="BGR") -> tuple[int, np.ndarray] | Iterable[np.ndarray]:
+        """
+        
+        Returns:
+        -------
+        if return_type is bbox:
+            return bboxes, [peaks, counts, areas, densities]
+        """
         binary_image = (
             ( (img > self.pixel_thr).astype(np.int32) )*255
         ).astype(np.uint8)
@@ -89,9 +95,9 @@ class ConnectedComponetBlob():
         return bounding_boxes if not nms \
             else non_max_suppression_fast(bounding_boxes)
 
-    def _bbox_post_processing(self, img:np.ndarray, bboxes:np.ndarray)->list[dict[str, Any]]:
+    def _bbox_post_processing(self, img:np.ndarray, bboxes:np.ndarray)->Iterable[np.ndarray]:
         if len(bboxes) == 0:
-            return []
+            return [], [], []
         
         blob_crops = [crop(img=img, xyxy=bi) for bi in bboxes]
 
@@ -117,14 +123,5 @@ class ConnectedComponetBlob():
         )[0]
         
         valid_idxs = np.union1d(peak_valid, low_peak_valid)
-
-        return [
-            {
-                'box':bboxes[i],
-                'count':counts[i],
-                'area':areas[i],
-                'peak':peaks[i],
-                'density':densities[i]
-            } 
-            for i in valid_idxs
-        ]
+        peak_count_area = np.column_stack([peaks, counts, areas])
+        return bboxes[valid_idxs], peak_count_area[valid_idxs], densities[valid_idxs]
