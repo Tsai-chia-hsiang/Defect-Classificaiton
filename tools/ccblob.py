@@ -51,12 +51,13 @@ def crop(img:np.ndarray, xyxy:np.ndarray)->np.ndarray:
 
 class ConnectedComponetBlob():
 
-    def __init__(self, pixel_value_thr:int=0, blob_area_lowerbound:int=200, peak_lowerbound:int=220):
+    def __init__(self, pixel_value_thr:int=0, blob_area_lowerbound:int=180, peak_lowerbound:int=160, density_lowerbound:float=0.4):
         
         self.pixel_thr = pixel_value_thr
-
-        # [area, peak]
-        self.boxes_thr = np.array([blob_area_lowerbound, peak_lowerbound],dtype=np.float32)
+        self.peak_lb = peak_lowerbound
+        self.area_lb = blob_area_lowerbound
+        self.density_lb = density_lowerbound
+        self.low_peak_thr = np.array([blob_area_lowerbound, density_lowerbound])
     
     def __call__(self, img:np.ndarray, return_type:Literal["mask", "bbox"]="bbox", nms:bool=True, input_color_mode:Literal["RGB","BGR"]="BGR") -> tuple[int, np.ndarray] | list[dict[str, Any]]:
             
@@ -96,16 +97,31 @@ class ConnectedComponetBlob():
 
         areas = (bboxes[:, 2]- bboxes[: ,0])*(bboxes[:, 3] - bboxes[:, 1])
         peaks = np.array([np.max(ci) for ci in blob_crops])
-        densities = np.array([np.count_nonzero(ci)/ci.size for ci in blob_crops])
+        #counts = np.array([np.count_nonzero((ci>20).astype(np.int32)) for ci in blob_crops])
+        counts = np.array([np.count_nonzero(ci) for ci in blob_crops])
+        densities = counts/areas
+       
+        # condition = np.column_stack([areas, peaks])
+        # comparison_result = condition >= self.boxes_thr[:2]
+        # valid_idxs = np.where(np.any(comparison_result, axis=1))[0]
         
-        condition = np.column_stack([areas, peaks])
+        # directly approval since it contains high peak value
+        peak_valid = np.where(peaks >= self.peak_lb)[0]
 
-        comparison_result = condition >= self.boxes_thr
-        valid_idxs = np.where(np.all(comparison_result, axis=1))[0]
+        # check the area as well as density
+        low_peak_valid = np.where(
+            np.all(
+                np.column_stack([areas, densities]) >= self.low_peak_thr, 
+                axis=1
+            )
+        )[0]
+        
+        valid_idxs = np.union1d(peak_valid, low_peak_valid)
 
         return [
             {
                 'box':bboxes[i],
+                'count':counts[i],
                 'area':areas[i],
                 'peak':peaks[i],
                 'density':densities[i]
