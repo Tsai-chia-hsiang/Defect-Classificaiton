@@ -8,6 +8,23 @@ from torchvision import transforms
 from torch.utils.data import Dataset
 from .io import read_json
 
+
+def get_origin_data_files(root:Path, only_origin=True) -> dict[str, list[Path]]:
+    
+    def is_origin(x:str):
+        return 'aug' not in x
+
+    
+    folders = [ _ for _ in root.iterdir() if _.is_dir()]
+    return {
+        fi.parts[-1]:sorted(
+            [_ for _ in fi.glob("*.jpg") \
+            if only_origin and is_origin(_.stem)], 
+            key = lambda x: int(x.stem) if 'aug' not in x.stem else x.stem
+        )
+        for fi in folders
+    }
+
 extract_label = lambda x:Path(x).parts[-2]
 G_normalizor = transforms.Compose([
     transforms.ToTensor(),
@@ -75,28 +92,7 @@ class Feature_Data(Big_Data_IMG):
             self.features[index], 
             self.img_with_label[index][1]
         )
-    
-class HoG_Dataset():
-    
-    def __init__(self, file_lst:list[Path], label_map :dict[str, int]) -> None:
-
-        self.ncls = len(label_map)
-        self.f = [[] for _ in range(self.ncls)]
-        self.label_map = label_map.copy()
-        self.label_map_reverse = {v:k for v,k in self.label_map.items()}
-        self.X = [[] for _ in range(self.ncls)]
-        self.cls_count = np.zeros((self.ncls))
-        
-        print("read features ..")
-        for i in tqdm(file_lst):
-            li = label_map[extract_label(i)]
-            self.X[li].append(np.load(i))
-            self.cls_count[li] += 1
-        self.Y = np.concatenate(
-            [np.ones((len(self.X[i])))*i for i in range(self.ncls)]
-        )
-        self.X = np.vstack(self.X)
-        
+      
 
 
 def get_datasets(file_table:dict, label_map:dict[str, int], pre_emd:bool=False, w_log_smooth:bool=True) -> dict[str, Big_Data_IMG]:
