@@ -1,3 +1,12 @@
+from .linearclassifier import LC
+from .resnet import *
+
+MODEL_MAP = {
+    'resnet34':resnet_34,
+    'resnet18':resnet_18,
+    'resnet50':resnet_50,
+    'lc':LC
+}
 
 def remove_module_prefix(state_dict):
     """
