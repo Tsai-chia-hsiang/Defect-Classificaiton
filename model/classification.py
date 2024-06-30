@@ -1,7 +1,6 @@
-from typing import Callable, Any
+from typing import Optional
 from tqdm import tqdm
 from time import time
-from copy import deepcopy
 from pathlib import Path
 from PIL import Image
 import numpy as np
@@ -9,15 +8,22 @@ import pandas as pd
 from sklearn.metrics import recall_score, accuracy_score, f1_score
 import torch
 import torch.nn as nn
+from torch.nn import CrossEntropyLoss
 from torch.utils.data import DataLoader
-from torch.nn import CrossEntropyLoss 
 from torch.optim import Optimizer, Adam
+from .lossfunc import build_cls_criteria, FocalLoss
 from tools.dataset import Big_Data_IMG, G_normalizor, extract_label
 from tools.plt_tools import plot_curves
 
+def print_cls_metrics(t:dict):
+    for k,v in t.items():
+        print(f"{k} : {v[0]}/{v[1]}={v[2]:.3f}")
+
+
+
 def forward_one_epoch(
     model:nn.Module, loader:DataLoader, device:torch.device, 
-    criteria:Callable, optr:Optimizer=None, 
+    criteria:Optional[CrossEntropyLoss|FocalLoss]=None, optr:Optional[Optimizer]=None, 
     each_cls_recall:bool=False, return_prediction:bool=False
 )-> tuple:
     """
@@ -97,12 +103,13 @@ def forward_one_epoch(
     return tuple(ret)
 
 
-def train(model:torch.nn.Module, dataset:dict[str, Big_Data_IMG], epochs:int = 20, batchsize:int = 40, lr:float=1e-3, loss_weight:dict[str, torch.Tensor]=None, ckpt_dir:Path=Path("ckpt"), model_name:str="model", return_model:bool=True) -> nn.Module | None:
-    
-    def print_cls_metrics(t:dict):
-        for k,v in t.items():
-            print(f"{k} : {v[0]}/{v[1]}={v[2]:.3f}")
-
+def train(
+    dataset:dict[str, Big_Data_IMG],
+    model:torch.nn.Module, 
+    epochs:int = 20, batchsize:int = 40, lr:float=1e-3, 
+    cls_loss:str="ce", loss_weight:dict[str, torch.Tensor]=None, focal_gamma:float=2,
+    ckpt_dir:Path=Path("ckpt"), model_name:str="model", return_model:bool=True
+) -> nn.Module | None:
     
     dev = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     ckpt_dir.mkdir(parents=True, exist_ok=True)
@@ -111,19 +118,26 @@ def train(model:torch.nn.Module, dataset:dict[str, Big_Data_IMG], epochs:int = 2
     g.manual_seed(0)
     
     loader = {
-        mode:DataLoader(dataset=dataset[mode], batch_size=batchsize, shuffle=True, generator=g)
+        mode:DataLoader(
+            dataset=dataset[mode], batch_size=batchsize, 
+            shuffle=True, generator=g
+        )
         for mode in ['train', 'valid']
     }
 
-    critieras = {
-        mode: CrossEntropyLoss() if loss_weight[mode] is None 
-        else CrossEntropyLoss(weight=loss_weight[mode].to(device=dev))
+    critieras:dict[str, CrossEntropyLoss] = {
+        mode : build_cls_criteria(
+            cls_loss=cls_loss, 
+            weight = loss_weight[mode].to(device=dev) \
+                if loss_weight[mode] is not None else None,
+            gamma=focal_gamma
+        ) 
         for mode in ['train', 'valid']
     }
 
     print(f"train data : {dataset['train'].cls_count}")
     print(f"valid data : {dataset['valid'].cls_count}")
-    print(f"lossw = {critieras['train'].weight}, {critieras['valid'].weight}")
+    print(f"lossw for {critieras['train']} : train : {critieras['train'].weight}, valid : {critieras['valid'].weight}")
 
     M_GPU = False
     model = model.to(device=dev)
@@ -145,7 +159,6 @@ def train(model:torch.nn.Module, dataset:dict[str, Big_Data_IMG], epochs:int = 2
     
     best_val_metrics = 0
     for e in range(epochs):
-        
         for mode in ['train', 'valid']:
             e_start = time()
 
@@ -204,10 +217,10 @@ def test(model:nn.Module, test_dataset:Big_Data_IMG, dev, batchsize = 40) -> tup
     
     model = model.eval().to(device=dev)
     testloader = DataLoader(dataset=test_dataset, batch_size=batchsize) 
-    criteria = CrossEntropyLoss()
+
     _, acc, f1, recall, cls_recall, pred_df = forward_one_epoch(
         model = model, loader = testloader, device=dev,
-        criteria = criteria, return_prediction=True, 
+        criteria = None, return_prediction=True, 
         each_cls_recall=True
     )
     pred_df = pd.DataFrame(pred_df)
