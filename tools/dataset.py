@@ -30,10 +30,16 @@ G_normalizor = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize(mean=[0.5], std=[0.5])
 ])
-
+G_patch_normalizor = transforms.Compose(
+    [
+        transforms.Resize((224,224)),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.5], std=[0.5])
+    ]
+)
 class Big_Data_IMG(Dataset):
     
-    def __init__(self, img_path_list:list[Path], label_map:dict[str, int], log_smooth:bool=True) -> None:
+    def __init__(self, img_path_list:list[Path], label_map:dict[str, int], log_smooth:bool=True, is_patch:bool=False) -> None:
         
         super().__init__()
         self.label_cls_map = label_map.copy()
@@ -47,7 +53,7 @@ class Big_Data_IMG(Dataset):
             (i,  self.__get_and_accumu_cls(label=i)) 
             for i in img_path_list
         ]
-        
+        self.is_patch = is_patch
         self.cls_w = self.nimg/self.cls_count
         if log_smooth:
             self.cls_w = torch.log(self.cls_w)
@@ -62,11 +68,11 @@ class Big_Data_IMG(Dataset):
     def __getitem__(self, index) -> tuple[Path, torch.Tensor, torch.Tensor]:
 
         # assert self.cls_label_map[self.img_with_label[index][1].item()] == extract_label(self.img_with_label[index][0]) 
+        img = Image.open(self.img_with_label[index][0]).convert("L")
         return (
             self.img_with_label[index][0], 
-            G_normalizor(
-                Image.open(self.img_with_label[index][0]).convert("L")
-            ), 
+            G_normalizor(img) if not self.is_patch \
+                else G_patch_normalizor(img), 
             self.img_with_label[index][1]
         )
     
@@ -95,7 +101,10 @@ class Feature_Data(Big_Data_IMG):
       
 
 
-def get_datasets(file_table:dict, label_map:dict[str, int], pre_emd:bool=False, w_log_smooth:bool=True) -> dict[str, Big_Data_IMG]:
+def get_datasets(
+    file_table:dict, label_map:dict[str, int], is_patch:bool=False, 
+    pre_emd:bool=False, w_log_smooth:bool=True
+) -> dict[str, Big_Data_IMG]:
     
     table = {
         'train' :[],
@@ -113,7 +122,7 @@ def get_datasets(file_table:dict, label_map:dict[str, int], pre_emd:bool=False, 
     print(label_map)
     COSTURCTOR = Big_Data_IMG if not pre_emd else Feature_Data
     return {
-        k: COSTURCTOR(img_path_list=v, label_map=label_map , log_smooth=w_log_smooth)
+        k: COSTURCTOR(img_path_list=v, label_map=label_map , log_smooth=w_log_smooth, is_patch=is_patch)
         for k, v in table.items() if len(v)
     }
 
