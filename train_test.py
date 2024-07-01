@@ -18,9 +18,10 @@ def parsing():
     p.add_argument("--label_map", type=Path, default=Path("dataset")/"label.json")
     
     # hyper parameters
-    p.add_argument("--epochs", type=int, default=30)
+    p.add_argument("--epochs", type=int, default=50)
     p.add_argument("--batchsize", type=int, default=40)
     p.add_argument("--lr", type=float, default=1e-3)
+    p.add_argument("--patient", type=int, default=10)
     
     # model saving path
     p.add_argument("--ckpt_dir", type=Path, default=Path("ckpt")/"baseline")
@@ -81,7 +82,7 @@ if __name__ == "__main__":
             model = model, 
             dataset=dataset, epochs=args.epochs, 
             ckpt_dir=ckpt_dir, model_name=model_name,
-            batchsize=args.batchsize,
+            batchsize=args.batchsize, early_stop=args.patient,
             lr=args.lr, return_model=False,
             cls_loss = args.loss, focal_gamma=args.focal_gamma, 
             loss_weight={
@@ -103,7 +104,7 @@ if __name__ == "__main__":
         acc, f1, recall, cls_recall, pred_df, error_df = test(
             model = model, dev = torch.device(f"cuda:0"), 
             test_dataset = dataset['test'], 
-            batchsize = args.batchsize
+            batchsize = 30
         )
         
         print(f"accuracy : {acc:.3f}, f1 : {f1:.3f}")

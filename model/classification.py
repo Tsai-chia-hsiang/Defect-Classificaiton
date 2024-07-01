@@ -105,8 +105,8 @@ def forward_one_epoch(
 
 def train(
     dataset:dict[str, Big_Data_IMG],
-    model:torch.nn.Module, 
-    epochs:int = 20, batchsize:int = 40, lr:float=1e-3, 
+    model:torch.nn.Module, early_stop:int=30,
+    epochs:int = 50, batchsize:int = 40, lr:float=1e-3, 
     cls_loss:str="ce", loss_weight:dict[str, torch.Tensor]=None, focal_gamma:float=2,
     ckpt_dir:Path=Path("ckpt"), model_name:str="model", return_model:bool=True
 ) -> nn.Module | None:
@@ -158,6 +158,8 @@ def train(
     }
     
     best_val_metrics = 0
+    stop_count = 0
+    e = 0
     for e in range(epochs):
         for mode in ['train', 'valid']:
             e_start = time()
@@ -177,29 +179,35 @@ def train(
                 saved = False
                 if metrics[mode]['macro_f1'][e] >= best_val_metrics:
                     saved = True
+                    stop_count = 0
                     torch.save(
                         model.module.state_dict() if M_GPU else model.state_dict(), 
                         ckpt_dir/model_name
                     )
                     best_val_metrics = metrics[mode]['macro_f1'][e]
-
+                else:
+                    stop_count += 1
             print(f"{mode} {e} time: {e_end - e_start:.3f} secs | loss : {metrics[mode]['loss'][e]:.3f} | acc: {metrics[mode]['accuracy'][e]:.3f}")
             print(f"f1 : {metrics[mode]['macro_f1'][e]:.3f}, best f1 : {best_val_metrics:.3f}, save model : {saved}")
+            print(f"stop count :{stop_count}")
             print(f"recall: {metrics[mode]['macro_recall'][e]:.3f}")
             print_cls_metrics(cls_recall)
         
+        if stop_count == early_stop:
+            print("No more improve on validation set, early stop")
+            break
         print(f"=="*50)
     
     pure_name = Path(model_name).stem
     plot_curves(
-        [(metrics['train']['loss'], "train")], 
+        [(metrics['train']['loss'][:e+1], "train")], 
         plt_title="Loss", saveto=ckpt_dir/f"{pure_name}_train_loss.jpg"
     )
     plot_curves(
         [
-            (metrics['valid']['accuracy'], "val_acc"),
-            (metrics['valid']['macro_f1'], "val_f1"),
-            (metrics['valid']['macro_recall'], "val_recall")
+            (metrics['valid']['accuracy'][:e+1], "val_acc"),
+            (metrics['valid']['macro_f1'][:e+1], "val_f1"),
+            (metrics['valid']['macro_recall'][:e+1], "val_recall")
         ], 
         plt_title = "Metrics", 
         saveto = ckpt_dir/f"{pure_name}_val_metrics.jpg"
@@ -208,9 +216,7 @@ def train(
     if return_model:
         model = model.to(torch.device('cpu'))
         model.load_state_dict(torch.load(ckpt_dir/model_name, map_location='cpu'))
-
-    return model
-
+        return model 
 
 @torch.no_grad()
 def test(model:nn.Module, test_dataset:Big_Data_IMG, dev, batchsize = 40) -> tuple[float, float, float, dict[int, tuple], pd.DataFrame, pd.DataFrame]:
