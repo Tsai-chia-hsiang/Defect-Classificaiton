@@ -3,6 +3,7 @@
 .vscode
 dataset/**/*.jpg
 dataset/**/*.zip
+ckpt/5foldcv
 ckpt/**/*.jpg
 ckpt/**/*.csv
 ckpt/**/*.pt
