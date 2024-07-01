@@ -1,5 +1,6 @@
-from typing import Iterable
-from collections import deque
+from typing import Iterable, Any, Optional
+import gc
+import os
 import numpy as np
 import torch
 from torchvision.ops import box_iou
@@ -8,6 +9,40 @@ import cv2
 def crop(img:np.ndarray, xyxy:np.ndarray)->np.ndarray:
    
     return img[xyxy[0]:xyxy[2], xyxy[1]:xyxy[3], ...].copy()
+
+def draw_boxes(bg:np.ndarray, boxes:dict[str, Any], boxID:bool=False, save_to:Optional[os.PathLike]=None, save_log:bool=False) -> np.ndarray|None:
+    
+    draw = bg.copy()
+    
+    if draw.ndim == 2:
+        draw = cv2.cvtColor(draw, cv2.COLOR_GRAY2BGR)
+    
+    for idx, bi in enumerate(boxes):
+        if boxID:
+            cv2.putText(
+                draw,f"{idx}",
+                org=(bi['xyxy'][1], max(bi['xyxy'][0] - 5, 0)),
+                fontFace=cv2.FONT_HERSHEY_SIMPLEX, 
+                fontScale=0.5, color=(255, 255, 255), thickness=1
+            )      
+        cv2.rectangle(
+            draw, 
+            (bi['xyxy'][1], bi['xyxy'][0]), 
+            (bi['xyxy'][3], bi['xyxy'][2]),
+            color= (0,0,255), thickness = 1
+        )
+    if save_to is not None:
+        
+        write_ret = cv2.imwrite(str(save_to), draw)
+        if save_log:
+            print(f"{save_to} : {write_ret}")
+        
+        del draw 
+        gc.collect()
+        
+        return None 
+
+    return draw
 
 def compute_boundary_distance(box1, box2):
     """
@@ -56,8 +91,6 @@ def pairwise_is_box_inside(box1:torch.Tensor, box2:torch.Tensor)->torch.Tensor:
     
     return (inside_x1 & inside_y1 & inside_x2 & inside_y2).to(torch.int32)
 
-
-
 def merge_boxes(box1, box2):
     """
     Merge two bounding boxes.
@@ -91,7 +124,7 @@ def merge_boxes_v(boxes:np.ndarray) -> np.ndarray:
     ymax = np.max(boxes[:, 3])
     return np.array([xmin, ymin, xmax, ymax])
 
-def merge_boxes_with_iou2(boxes:np.ndarray, d:float=10):
+def merge_boxes_with_iou(boxes:np.ndarray, d:float=10):
     """
     boxes: (N, 4)
     """

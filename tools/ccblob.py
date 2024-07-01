@@ -1,5 +1,6 @@
 from typing import Literal, Any, Iterable
 import cv2
+import gc
 import numpy as np
 from .boxtools import *
 
@@ -10,12 +11,14 @@ class ConnectedComponetBlob():
         min_pixels_per_comp:int=20, 
         blob_area_lowerbound:int=80, 
         region_mean:float=30,
-        box_gray_lowerbound:float=25
+        box_gray_lowerbound:float=25,
+        box_merge_distance:float=10
     ):
         
         self.pixel_thr = pixel_value_thr
         self.componet_lb = min_pixels_per_comp
         self.rmean = region_mean
+        self.merge_dist = box_merge_distance
         self.area_lb = blob_area_lowerbound
         self.box_gray_lb = box_gray_lowerbound
         self.box_thr = np.array([self.area_lb, box_gray_lowerbound])
@@ -29,7 +32,9 @@ class ConnectedComponetBlob():
         
         num_labels, labels_im = cv2.connectedComponents(binary_image)
   
-        boxes = self.get_bbox_from_mask(img=img, num_labels=num_labels, mask=labels_im)
+        boxes = self.get_bbox_from_mask(
+            img=img, num_labels=num_labels, mask=labels_im
+        )
         
         return self.bbox_post_processing(
             img=img, bboxes=boxes, 
@@ -60,8 +65,8 @@ class ConnectedComponetBlob():
             (bounding_boxes[:, 3] - bounding_boxes[:, 1])
         
         bounding_boxes = bounding_boxes[np.argsort(-areas)]
-        M = merge_boxes_with_iou2(bounding_boxes)
-        # M = np.asarray(merge_boxes_with_boundary_distance(M.tolist(), 10))
+        M = merge_boxes_with_iou(bounding_boxes, d=self.merge_dist)
+
         return M
     
     def bbox_post_processing(self, img:np.ndarray, bboxes:np.ndarray, need_crop:bool, topk:int=0)->list[dict[str, Any]]|tuple[list[dict[str, Any]], list[np.ndarray]]:
@@ -110,6 +115,16 @@ class ConnectedComponetBlob():
             }   
             for i in valid_idxs
         ]
-
-        return bboxs_des
+        
+        
+        del areas ,peaks, counts ,Lcounts ,defect_part_grayscale, densities
+        
+        
+        if not need_crop:
+            del blob_crops
+            gc.collect()
+            return bboxs_des
+        else:
+            gc.collect()
+            return bboxs_des, [blob_crops[i] for i in valid_idxs]
         
