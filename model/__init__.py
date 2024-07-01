@@ -1,11 +1,14 @@
 from .linearclassifier import LC
+from .cnn import CNN, vgg_11
 from .resnet import *
 
 MODEL_MAP = {
     'resnet34':resnet_34,
     'resnet18':resnet_18,
     'resnet50':resnet_50,
-    'lc':LC
+    'vgg11':vgg_11,
+    'lc':LC,
+    'cnn':CNN
 }
 
 def remove_module_prefix(state_dict):
