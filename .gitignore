@@ -2,6 +2,9 @@
 */*/*.pt
 .vscode
 dataset/**/*.jpg
-ckpt/**/ 
+ckpt/**/*.jpg
+ckpt/**/*.csv
+ckpt/**/*.pt
+
 connectedcomponents
 ann
