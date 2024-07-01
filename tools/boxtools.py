@@ -1,39 +1,13 @@
 from typing import Iterable
+from collections import deque
 import numpy as np
+import torch
+from torchvision.ops import box_iou
 import cv2
 
 def crop(img:np.ndarray, xyxy:np.ndarray)->np.ndarray:
    
     return img[xyxy[0]:xyxy[2], xyxy[1]:xyxy[3], ...].copy()
-
-def compute_iou(box1, box2):
-    """
-    Compute the Intersection over Union (IoU) of two bounding boxes.
-    
-    Parameters:
-    box1, box2: list or tuple of (x1, y1, x2, y2)
-        (x1, y1) is the top-left coordinate
-        (x2, y2) is the bottom-right coordinate
-    
-    Returns:
-    float: IoU value
-    """
-    x1_inter = max(box1[0], box2[0])
-    y1_inter = max(box1[1], box2[1])
-    x2_inter = min(box1[2], box2[2])
-    y2_inter = min(box1[3], box2[3])
-    
-    if x1_inter < x2_inter and y1_inter < y2_inter:
-        inter_area = (x2_inter - x1_inter) * (y2_inter - y1_inter)
-    else:
-        inter_area = 0
-    
-    box1_area = (box1[2] - box1[0]) * (box1[3] - box1[1])
-    box2_area = (box2[2] - box2[0]) * (box2[3] - box2[1])
-    
-    iou = inter_area / float(box1_area + box2_area - inter_area)
-    
-    return iou
 
 def compute_boundary_distance(box1, box2):
     """
@@ -61,6 +35,29 @@ def compute_boundary_distance(box1, box2):
     # Otherwise, return the Euclidean distance
     return np.sqrt(horizontal_dist ** 2 + vertical_dist ** 2)
 
+def pairwise_is_box_inside(box1:torch.Tensor, box2:torch.Tensor)->torch.Tensor:
+    """
+    Check if each `inner_box` is completely inside any `outer_box`.
+    
+    Parameters:
+    outer_boxes (Tensor): Tensor of shape (N, 4) representing N outer bounding boxes [x1, y1, x2, y2]
+    inner_boxes (Tensor): Tensor of shape (M, 4) representing M inner bounding boxes [x1, y1, x2, y2]
+    
+    Returns:
+    Tensor: A boolean tensor of shape (N, M) where each element (i, j) is True if `inner_boxes[j]` is inside `outer_boxes[i]`
+    """
+    outer_boxes = box1.unsqueeze(1)  # Shape (N, 1, 4)
+    inner_boxes = box2.unsqueeze(0)  # Shape (1, M, 4)
+    
+    inside_x1 = inner_boxes[..., 0] >= outer_boxes[..., 0]
+    inside_y1 = inner_boxes[..., 1] >= outer_boxes[..., 1]
+    inside_x2 = inner_boxes[..., 2] <= outer_boxes[..., 2]
+    inside_y2 = inner_boxes[..., 3] <= outer_boxes[..., 3]
+    
+    return (inside_x1 & inside_y1 & inside_x2 & inside_y2).to(torch.int32)
+
+
+
 def merge_boxes(box1, box2):
     """
     Merge two bounding boxes.
@@ -78,34 +75,87 @@ def merge_boxes(box1, box2):
     
     return [x1, y1, x2, y2]
 
-def merge_boxes_with_iou(boxes):
+def merge_boxes_v(boxes:np.ndarray) -> np.ndarray:
     """
-    Merge a list of bounding boxes where the IoU of each pair of boxes > 0.
-    
-    Parameters:
-    boxes: list of lists or tuples of (x1, y1, x2, y2)
-    
-    Returns:
-    list: Merged bounding boxes
+    Args
+    -------
+    boxes: (N, 4) : (N, xyxy)
+
+    Return
+    ------
+    a merged box xyxy
     """
-    merged_boxes = []
+    xmin = np.min(boxes[:, 0])
+    ymin = np.min(boxes[:, 1])
+    xmax = np.max(boxes[:, 2])
+    ymax = np.max(boxes[:, 3])
+    return np.array([xmin, ymin, xmax, ymax])
 
-    while boxes:
-        base_box = boxes.pop(0)
-        to_merge = []
+def merge_boxes_with_iou2(boxes:np.ndarray, d:float=10):
+    """
+    boxes: (N, 4)
+    """
+    def grouping(src_boxes:np.ndarray, cost_matrix:np.ndarray, cmp_funct) -> np.ndarray:
         
-        for box in boxes:
-            if compute_iou(base_box, box) > 0:
-                to_merge.append(box)
+        still_exist = (np.arange(src_boxes.shape[0])).tolist()
+        group = []
         
-        for box in to_merge:
-            boxes.remove(box)
-            base_box = merge_boxes(base_box, box)
+        while still_exist:
+
+            target = still_exist[0]
+            still_exist = still_exist[1:]
+            overlap = np.where(cmp_funct(cost_matrix[target]))[0]
+            
+            gi = [target]
+            for fi in overlap:
+                if fi in still_exist:
+                    gi.append(fi)
+                    still_exist.remove(fi)
+            gi = np.asarray(gi)
+            group.append(merge_boxes_v(src_boxes[gi]))
         
-        merged_boxes.append(base_box)
+        return np.asarray(group)
+
+    # first merge : merge fully covered 
+    merge = boxes
+
+    for c in range(10):
+        box_tensor = torch.from_numpy(merge)
+        
+        pairwised_covered = pairwise_is_box_inside(box_tensor, box_tensor).numpy()
+        pairwise_iou = box_iou(box_tensor, box_tensor).numpy()
     
-    return merged_boxes
-
+        if np.sum(pairwised_covered) == merge.shape[0] and np.sum(pairwise_iou) == 1.0*merge.shape[0]:
+            # print(c)
+            break
+        
+        merge = grouping(
+            src_boxes=merge, 
+            cost_matrix=pairwised_covered, 
+            cmp_funct = lambda x:x==1
+        )
+        
+        # second : merge iou > 0
+        box_tensor = torch.from_numpy(merge)
+        pairwise_iou = box_iou(box_tensor, box_tensor).numpy()
+        merge = grouping(
+            src_boxes=merge, 
+            cost_matrix=pairwise_iou, 
+            cmp_funct = lambda x:x>0
+        )
+    # third merge with boundary distance and then iou merge again
+    
+    merge = np.asarray(
+        merge_boxes_with_boundary_distance(merge.tolist(), d)
+    )
+    box_tensor = torch.from_numpy(merge)
+    pairwise_iou = box_iou(box_tensor, box_tensor).numpy()
+    merge = grouping(
+            src_boxes=merge, 
+            cost_matrix=pairwise_iou, 
+            cmp_funct = lambda x:x>0
+        )
+    return merge 
 
 def merge_boxes_with_boundary_distance(boxes, threshold_distance):
     """
@@ -196,102 +246,6 @@ def is_bbox_at_edge_or_corner(bbox, image_shape, thr = 10) -> bool:
     H = (top_margin <= thr) or (bottom_margin <= thr)
     #print(H)
     return (W or H)
-
-def bbox_wh_ratio(bbox:np.ndarray):
-    w = bbox[3] - bbox[1]
-    h = bbox[2] - bbox[0]
-    if min(w,h) == 0 :
-        return 0
-
-    return min(w,h) / max(w,h)
-
-def merge_lines(lines, angle_threshold=5, distance_threshold=20):
-    
-    def angle_between_lines(line1, line2):
-        def get_angle(x1, y1, x2, y2):
-            return np.arctan2(y2 - y1, x2 - x1) * 180 / np.pi
-        
-        x1, y1, x2, y2 = line1
-        x3, y3, x4, y4 = line2
-        angle1 = get_angle(x1, y1, x2, y2)
-        angle2 = get_angle(x3, y3, x4, y4)
-    
-        return abs(angle1 - angle2)
-
-    if lines is None:
-        return []
-
-    if len(lines) == 1:
-        return lines[0]
-
-    merged_lines = []
-    for line in lines:
-        x1, y1, x2, y2 = line[0]
-        added = False
-        for merged_line in merged_lines:
-            mx1, my1, mx2, my2 = merged_line
-            angle_diff = angle_between_lines([x1, y1, x2, y2], merged_line)
-            if angle_diff < angle_threshold and ((abs(x1 - mx1) < distance_threshold and abs(y1 - my1) < distance_threshold) or \
-                                                 (abs(x2 - mx2) < distance_threshold and abs(y2 - my2) < distance_threshold)):
-                merged_line[0] = min(x1, mx1)
-                merged_line[1] = min(y1, my1)
-                merged_line[2] = max(x2, mx2)
-                merged_line[3] = max(y2, my2)
-                added = True
-                break
-        if not added:
-            merged_lines.append([x1, y1, x2, y2])
-    return merged_lines
-
-
-
-def line_light_and_density(points:np.ndarray, crop:np.ndarray) -> tuple[float, float]:
-    
-    def get_line_points(start_point, end_point):
-        # Create a black image of sufficient size
-        img = np.zeros_like(crop)
-
-        cv2.line(img, start_point, end_point, 255, 1)
-        
-        return np.where(img == 255)
-
-    points_gray_scale = crop[
-        get_line_points(
-            (int(points[0]), int(points[1])),
-            (int(points[2]), int(points[3]))
-        )
-    ].astype(np.int32)
-    
-    density = np.count_nonzero(points_gray_scale)/points_gray_scale.size
-    avg_light = np.mean(points_gray_scale[np.where(points_gray_scale > 0)])
-    
-    return float(avg_light), density
-
-def n_line_single(c) -> tuple[list[np.ndarray], list[float], list[float]]:
-    
-    edges = cv2.Canny(c, 50, 150)
-    lines = merge_lines(
-        cv2.HoughLinesP(
-            edges, 1, np.pi/180, 
-            threshold=20, minLineLength=25, maxLineGap=10
-        )
-    )
-    d = []
-    valid_l = []
-    avg_l = []
-    l_length = []
-    for li in lines:
-        light_i, di = line_light_and_density(points=li, crop=c)
-        len_i = cv2.norm((int(li[0]), int(li[1])), (int(li[2]), int(li[3])))
-        # print(light_i, di)
-        if light_i > 45:
-            l_length.append(len_i)
-            valid_l.append(li)
-            d.append(di)
-            avg_l.append(light_i)
-    
-    return valid_l, avg_l, d, l_length
-
 
 def print_box(box:dict, bid=None)->str:
     f = "" if bid is None else f"{bid}\n"
