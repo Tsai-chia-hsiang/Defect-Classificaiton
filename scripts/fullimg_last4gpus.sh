@@ -6,7 +6,7 @@ LR=0.001
 PATIENT=30
 BATCHSIZE=68
 EPOCHS=50
-MAIN_SCRIPT=fullimg_train_test.py
+MAIN_SCRIPT=train_test.py
 
 if ! [ -d "$CKPT_DIR" ]; then
     echo "Directory '$CKPT_DIR' does not exist. Creating it now."
