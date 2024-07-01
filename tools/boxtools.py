@@ -149,19 +149,21 @@ def merge_boxes_with_iou(boxes:np.ndarray, d:float=10):
         
         return np.asarray(group)
 
-    # first merge : merge fully covered 
+     
     merge = boxes
 
-    for c in range(10):
+    for c in range(2):
         box_tensor = torch.from_numpy(merge)
         
         pairwised_covered = pairwise_is_box_inside(box_tensor, box_tensor).numpy()
         pairwise_iou = box_iou(box_tensor, box_tensor).numpy()
     
+        """
         if np.sum(pairwised_covered) == merge.shape[0] and np.sum(pairwise_iou) == 1.0*merge.shape[0]:
             # print(c)
             break
-        
+        """
+        # first merge : merge fully covered
         merge = grouping(
             src_boxes=merge, 
             cost_matrix=pairwised_covered, 
@@ -174,7 +176,7 @@ def merge_boxes_with_iou(boxes:np.ndarray, d:float=10):
         merge = grouping(
             src_boxes=merge, 
             cost_matrix=pairwise_iou, 
-            cmp_funct = lambda x:x>0
+            cmp_funct = lambda x:x>0.3
         )
     # third merge with boundary distance and then iou merge again
     
