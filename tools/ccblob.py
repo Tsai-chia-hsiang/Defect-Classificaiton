@@ -66,8 +66,8 @@ class ConnectedComponetBlob():
         areas = (bounding_boxes[:, 2]- bounding_boxes[: ,0])*\
             (bounding_boxes[:, 3] - bounding_boxes[:, 1])
         
-        bounding_boxes = bounding_boxes[np.argsort(-areas)]
-        M = merge_boxes_with_iou(bounding_boxes, d=self.merge_dist)
+        M = bounding_boxes[np.argsort(-areas)]
+        M = merge_boxes_with_iou(M, d=self.merge_dist)
 
         return M
     
