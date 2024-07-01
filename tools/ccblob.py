@@ -23,7 +23,7 @@ class ConnectedComponetBlob():
         self.box_gray_lb = box_gray_lowerbound
         self.box_thr = np.array([self.area_lb, box_gray_lowerbound])
     
-    def __call__(self, img:np.ndarray, need_crop:bool=True, topk_light:int=0) -> list[dict[str, Any]]|tuple[list[dict[str, Any]], list[np.ndarray]]:
+    def __call__(self, img:np.ndarray, need_crop:bool=True, topk:int=0) -> list[dict[str, Any]]|tuple[list[dict[str, Any]], list[np.ndarray]]:
 
         
         binary_image = (
@@ -35,10 +35,11 @@ class ConnectedComponetBlob():
         boxes = self.get_bbox_from_mask(
             img=img, num_labels=num_labels, mask=labels_im
         )
-        
+
         return self.bbox_post_processing(
             img=img, bboxes=boxes, 
-            need_crop=need_crop, topk=topk_light
+            need_crop=need_crop, 
+            topk=topk
         )
    
     
@@ -60,7 +61,8 @@ class ConnectedComponetBlob():
         """
         bounding_boxes = non_max_suppression_fast(np.asarray(bounding_boxes))
         """
-        
+        if len(bounding_boxes) == 0:
+            return []
         areas = (bounding_boxes[:, 2]- bounding_boxes[: ,0])*\
             (bounding_boxes[:, 3] - bounding_boxes[:, 1])
         
@@ -72,8 +74,8 @@ class ConnectedComponetBlob():
     def bbox_post_processing(self, img:np.ndarray, bboxes:np.ndarray, need_crop:bool, topk:int=0)->list[dict[str, Any]]|tuple[list[dict[str, Any]], list[np.ndarray]]:
         
         if len(bboxes) == 0:
-            return [], [] if need_crop else []
-        
+            return ([], []) if need_crop else []
+            
         blob_crops = [crop(img=img, xyxy=bi) for bi in bboxes]
      
         areas = (bboxes[:, 2]- bboxes[: ,0])*(bboxes[:, 3] - bboxes[:, 1])
@@ -91,15 +93,21 @@ class ConnectedComponetBlob():
             ) 
         )[0]
 
-        sorted_idxs = np.argsort(-defect_part_grayscale[valid_idxs])
+        sorted_idxs = np.argsort(-areas[valid_idxs])
         valid_idxs = valid_idxs[sorted_idxs]
        
         if topk > 0:
             valid_idxs = valid_idxs[:topk]
-            
+        # print(bboxes)
         bboxs_des = [
             {
                 'xyxy'  : bboxes[i],
+                'xywh':np.asarray([
+                    (bboxes[i][0] + bboxes[i][2])/2, 
+                    (bboxes[i][1] + bboxes[i][3])/2,
+                    bboxes[i][2]-bboxes[i][0], 
+                    bboxes[i][3]-bboxes[i][1]
+                ]),
                 'ncount' : counts[i],
                 'lcount' : Lcounts[i],
                 'lr'     : Lcounts[i] / counts[i],
