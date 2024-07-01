@@ -1,0 +1,11 @@
+from connectedcomponents/patches/f_table.json reading all data
+class-label map: {'Type0': 0, 'Type1': 1, 'Type2': 2, 'Type3': 3}
+settings :
+lr: 0.001, epochs : 40, batchsize : 256
+{'Type0': 0, 'Type1': 1, 'Type2': 2, 'Type3': 3}
+resnet34
+model will be saved at ckpt/patch/baseline50/resnet34.pt
+train data : tensor([  55.,   36.,  535., 1151.])
+valid data : tensor([ 10.,   5.,  58., 141.])
+lossw for CrossEntropyLoss() : train : None, valid : None
+Using 4 GPUs!
