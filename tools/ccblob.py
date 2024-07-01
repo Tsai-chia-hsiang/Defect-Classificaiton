@@ -60,15 +60,10 @@ class ConnectedComponetBlob():
             (bounding_boxes[:, 3] - bounding_boxes[:, 1])
         
         bounding_boxes = bounding_boxes[np.argsort(-areas)]
-
-        M = np.asarray( 
-            merge_boxes_with_iou(
-                merge_boxes_with_iou(bounding_boxes.tolist())
-            )
-        )
-        #return bounding_boxes
+        M = merge_boxes_with_iou2(bounding_boxes)
+        # M = np.asarray(merge_boxes_with_boundary_distance(M.tolist(), 10))
         return M
-        
+    
     def bbox_post_processing(self, img:np.ndarray, bboxes:np.ndarray, need_crop:bool, topk:int=0)->list[dict[str, Any]]|tuple[list[dict[str, Any]], list[np.ndarray]]:
         
         if len(bboxes) == 0:
@@ -83,7 +78,7 @@ class ConnectedComponetBlob():
         defect_part_grayscale = np.asarray([np.mean(ci[np.where(ci>0)]) for ci in blob_crops]) 
         
         densities = counts/areas
-        # valid_idxs = np.where(areas >= self.area_lb)[0]
+        
         valid_idxs = np.where(
             np.all(
                 np.column_stack([areas, defect_part_grayscale]) >= self.box_thr,
@@ -93,7 +88,7 @@ class ConnectedComponetBlob():
 
         sorted_idxs = np.argsort(-defect_part_grayscale[valid_idxs])
         valid_idxs = valid_idxs[sorted_idxs]
-        
+       
         if topk > 0:
             valid_idxs = valid_idxs[:topk]
             
@@ -105,8 +100,6 @@ class ConnectedComponetBlob():
                 'lr'     : Lcounts[i] / counts[i],
                 'peak' : peaks[i],
                 'area'  : areas[i],
-                'whratio' : bbox_wh_ratio(bbox=bboxes[i]),
-                'lines' : n_line_single(c=blob_crops[i]),
                 'density': densities[i] ,
                 'corner': is_bbox_at_edge_or_corner(
                     bbox=bboxes[i], 
@@ -117,7 +110,6 @@ class ConnectedComponetBlob():
             }   
             for i in valid_idxs
         ]
-        if not need_crop:
-            return bboxs_des
-        return bboxs_des, [blob_crops[i] for i in valid_idxs]
 
+        return bboxs_des
+        
