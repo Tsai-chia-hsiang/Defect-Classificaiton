@@ -41,3 +41,6 @@ Marco-F1 score
 |CE|0.828|0.934|0.890|
 |WCE|0.876|0.923| 0.899|
 |Focal Loss|0.855|0.883|0.846|
+
+## Use simple resnet34 for classification the connected component pathes and vote:
+Marco-F1 score: 0.826
