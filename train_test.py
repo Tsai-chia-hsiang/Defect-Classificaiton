@@ -4,7 +4,7 @@ from time import time
 import torch
 from tools.torchtools import set_seed
 set_seed(seed=891122)
-from tools.dataset import get_datasets
+from tools.dataset import build_datasets
 from tools.io import read_json
 from model import remove_module_prefix
 from model import MODEL_MAP
@@ -16,8 +16,8 @@ def parsing():
     # dataset metadata
     p.add_argument("--data_table", type=Path, default=Path("dataset")/"train_valid_test"/"baseline.json")
     p.add_argument("--label_map", type=Path, default=Path("dataset")/"label.json")
-    p.add_argument("--patch", action='store_true')
-    
+    p.add_argument("--dtype", type=str, default="fullimg")
+    p.add_argument("--log_smooth", action='store_true')
     # hyper parameters
     p.add_argument("--epochs", type=int, default=50)
     p.add_argument("--batchsize", type=int, default=40)
@@ -58,17 +58,26 @@ if __name__ == "__main__":
     print(f"lr: {args.lr}, epochs : {args.epochs}, batchsize : {args.batchsize}")
   
 
-    dataset = get_datasets(
-        file_table = data_table, label_map = label_map,
-        w_log_smooth = False, is_patch=args.patch
+    dataset = build_datasets(
+        file_table = data_table, 
+        label_map = label_map,
+        w_log_smooth = args.log_smooth, 
+        dtype=args.dtype,
+        src_wh=[763, 463]
     )
     
     model:torch.nn.Module = None
-    print(args.using_model)
+    
+    contain_coo = False
+    if 'train' in dataset:
+        contain_coo = dataset['train'].contain_coo
+    elif 'test' in dataset:
+        contain_coo = dataset['test'].contain_coo
 
     model = MODEL_MAP[args.using_model](
         grayscale=True, 
-        ncls=len(label_map)
+        ncls=len(label_map),
+        coo = contain_coo
     )
     model_name = f"{args.using_model}.pt"
 
