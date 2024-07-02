@@ -37,7 +37,7 @@ def forward_one_epoch(
     if return_prediction = True, will attach a dict for gt as well prediction and file path
 
     """
-
+    contain_coo = loader.dataset.contain_coo
     total_loss = 0
     pred_gt_df = {'gt':[], 'pred':[], 'file':[]}
     
@@ -50,13 +50,19 @@ def forward_one_epoch(
         model.eval()
         torch.set_grad_enabled(False)
 
-    for pi, ti, li in tqdm(loader):
+    pi, batch_img, batch_coo, li, y = None, None, None, None, None
+    for  X in tqdm(loader):
         
         if optr is not None:
             optr.zero_grad()
         
-        y = model(ti.to(device=device))
-
+        if contain_coo:
+            pi, batch_img, batch_coo, li = X
+            y = model(batch_img.to(device=device),  batch_coo.to(device=device))
+        else:
+            pi, batch_img, li = X
+            y = model(batch_img.to(device=device))
+        
         if criteria is not None:
             loss:torch.Tensor = criteria(y, li.to(device=device))
             total_loss += loss.item()
