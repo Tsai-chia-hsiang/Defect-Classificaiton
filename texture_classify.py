@@ -7,6 +7,7 @@ import torch.nn.functional as F
 from tools.io import read_json
 from pathlib import Path
 from sklearn.metrics import recall_score, accuracy_score, f1_score
+import argparse
 
 def patch2src(patch_file:os.PathLike,src_root:Path) -> str:
     
@@ -16,9 +17,13 @@ def patch2src(patch_file:os.PathLike,src_root:Path) -> str:
     return str(src_root/t/f"{imid}.jpg")
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--predict_csv", type=Path)
+    args = parser.parse_args()
+
     src_root = Path("./dataset/p2")
     data_table = read_json("dataset/train_valid_test/baseline.json")
-    patch_pred = pd.read_csv("ckpt/patch/baseline34/test_pred.csv")
+    patch_pred = pd.read_csv(args.predict_csv)
     patch_pred['src'] = patch_pred['file'].apply(
         patch2src, args=(src_root,)     
     )
