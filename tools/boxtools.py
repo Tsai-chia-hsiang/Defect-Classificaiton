@@ -44,6 +44,15 @@ def draw_boxes(bg:np.ndarray, boxes:dict[str, Any], boxID:bool=False, save_to:Op
 
     return draw
 
+def normalize_box(box:torch.Tensor|np.ndarray, w:float, h:float) -> torch.Tensor|np.ndarray:
+    
+    """
+    wdim, hdim, wdim, hdim
+    """
+    normalizor = torch.tensor([w,h,w,h]) if isinstance(box, torch.Tensor) else np.array([w,h,w,h])
+    return box/normalizor
+
+
 def compute_boundary_distance(box1, box2):
     """
     Compute the minimum boundary distance between two bounding boxes.
