@@ -47,6 +47,6 @@ Marco-F1 score:
 
 |loss function|baseline|
 |-|-|
-|CE|0.828|0.843|
-|WCE|0.876|0.876|
+|CE|0.843|
+|WCE|0.876|
 |Focal Loss|0.882|
