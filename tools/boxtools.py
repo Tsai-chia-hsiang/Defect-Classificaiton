@@ -29,7 +29,7 @@ def draw_boxes(bg:np.ndarray, boxes:dict[str, Any], boxID:bool=False, save_to:Op
             draw, 
             (bi['xyxy'][1], bi['xyxy'][0]), 
             (bi['xyxy'][3], bi['xyxy'][2]),
-            color= (0,0,255), thickness = 1
+            color= (0,0,255), thickness = 2
         )
     if save_to is not None:
         
