@@ -2,15 +2,13 @@ import sys
 import cv2
 from time import time
 from tqdm import tqdm
-from typing import Any
 import numpy as np
 from pathlib import Path
 from tools.dataset import extract_label, get_origin_data_files
 from tools.ccblob import ConnectedComponetBlob
-from tools.boxtools import draw_boxes
+from tools.plt_tools import draw_boxes
 from tools.io import write_json, read_json
 
-np.random.seed(42)
 ROOT = Path("dataset")/"p2"
 VISSAVE = Path("connectedcomponents")/"vis"
 PATCHSAVE = Path("connectedcomponents")/"patches"
