@@ -4,45 +4,6 @@ import gc
 import numpy as np
 from .boxtools import *
 
-
-def closeness_of_dots(crops):
-    results = []
-    for roi in crops:
-        # Find the dots within the bounding box
-        dot_coords = np.column_stack(np.where(roi > 80))
-        
-        if len(dot_coords) > 1:
-            distances = np.sqrt(np.sum((dot_coords[:, np.newaxis] - dot_coords[np.newaxis, :])**2, axis=2))
-            mean_distance = np.mean(distances)
-            results.append(mean_distance)
-        else:
-            results.append(float('inf'))
-    
-    return np.asarray(results)
-
-
-def check_closeness_of_dots_along_curve(crops):
-    results = []
-    for roi in crops:
-        
-        # Find the dots within the bounding box
-        dot_coords = np.column_stack(np.where(roi > 0))
-        
-        if len(dot_coords) >= 4:
-            # Fit a spline to the dots
-            tck, u = splprep([dot_coords[:, 1], dot_coords[:, 0]], s=0)
-            new_points = splev(u, tck)
-            curve_coords = np.column_stack(new_points)
-            
-            # Calculate pairwise distances along the curve
-            distances = pdist(curve_coords, 'euclidean')
-            min_distance = np.min(distances)
-            results.append(min_distance)
-        else:
-            results.append(float('inf'))
-    
-    return np.asarray(results)
-
 class ConnectedComponetBlob():
 
     def __init__(
