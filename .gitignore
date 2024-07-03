@@ -2,4 +2,11 @@
 */*/*.pt
 .vscode
 dataset/**/*.jpg
-ckpt/**/ 
+dataset/**/*.zip
+ckpt/5foldcv
+ckpt/**/*.jpg
+ckpt/**/*.csv
+ckpt/**/*.pt
+
+connectedcomponents
+ann

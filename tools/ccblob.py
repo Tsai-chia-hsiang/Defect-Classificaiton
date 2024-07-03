@@ -1,55 +1,8 @@
 from typing import Literal, Any, Iterable
 import cv2
+import gc
 import numpy as np
-from scipy.spatial.distance import pdist
-from scipy.interpolate import splprep, splev
-
-def non_max_suppression_fast(boxes:np.ndarray, overlapThresh:float=0.3) -> np.ndarray:
-    if len(boxes) == 0:
-        return []
-            
-    # Initialize the list of picked indexes 
-    pick = []
-    
-    # Grab the coordinates of the bounding boxes
-    x1 = boxes[:, 0]
-    y1 = boxes[:, 1]
-    x2 = boxes[:, 2]
-    y2 = boxes[:, 3]
-    
-    # Compute the area of the bounding boxes and sort the bounding boxes by the bottom-right y-coordinate of the bounding box
-    area = (x2 - x1 + 1) * (y2 - y1 + 1)
-    idxs = np.argsort(y2)
-    
-    # Keep looping while some indexes still remain in the indexes list
-    while len(idxs) > 0:
-        # Grab the last index in the indexes list and add the index value to the list of picked indexes
-        last = len(idxs) - 1
-        i = idxs[last]
-        pick.append(i)
-        
-        # Find the largest (x, y) coordinates for the start of the bounding box and the smallest (x, y) coordinates for the end of the bounding box
-        xx1 = np.maximum(x1[i], x1[idxs[:last]])
-        yy1 = np.maximum(y1[i], y1[idxs[:last]])
-        xx2 = np.minimum(x2[i], x2[idxs[:last]])
-        yy2 = np.minimum(y2[i], y2[idxs[:last]])
-        
-        # Compute the width and height of the bounding box
-        w = np.maximum(0, xx2 - xx1 + 1)
-        h = np.maximum(0, yy2 - yy1 + 1)
-        
-        # Compute the ratio of overlap
-        overlap = (w * h) / area[idxs[:last]]
-        
-        # Delete all indexes from the index list that have overlap greater than the provided overlap threshold
-        idxs = np.delete(idxs, np.concatenate(([last], np.where(overlap > overlapThresh)[0])))
-    
-    # Return only the bounding boxes that were picked
-    return boxes[pick].astype(np.int32)
-
-def crop(img:np.ndarray, xyxy:np.ndarray)->np.ndarray:
-   
-    return img[xyxy[0]:xyxy[2], xyxy[1]:xyxy[3], ...]
+from .boxtools import *
 
 
 def closeness_of_dots(crops):
@@ -92,69 +45,133 @@ def check_closeness_of_dots_along_curve(crops):
 
 class ConnectedComponetBlob():
 
-    def __init__(self, pixel_value_thr:int=0, blob_area_lowerbound:int=180, peak_lowerbound:int=160):
+    def __init__(
+        self, pixel_value_thr:int=0, 
+        min_pixels_per_comp:int=20, 
+        blob_area_lowerbound:int=80, 
+        region_mean:float=30,
+        box_gray_lowerbound:float=25,
+        box_merge_distance:float=10
+    ):
         
         self.pixel_thr = pixel_value_thr
-        self.peak_lb = peak_lowerbound
+        self.componet_lb = min_pixels_per_comp
+        self.rmean = region_mean
+        self.merge_dist = box_merge_distance
         self.area_lb = blob_area_lowerbound
-        
-        self.low_peak_thr = np.array([peak_lowerbound, blob_area_lowerbound])
+        self.box_gray_lb = box_gray_lowerbound
+        self.box_thr = np.array([self.area_lb, box_gray_lowerbound])
     
-    def __call__(self, img:np.ndarray, return_type:Literal["mask", "bbox"]="bbox", nms:bool=True, input_color_mode:Literal["RGB","BGR"]="BGR") -> tuple[int, np.ndarray] | Iterable[np.ndarray]:
-        """
+    def __call__(self, img:np.ndarray, need_crop:bool=True, topk:int=0) -> list[dict[str, Any]]|tuple[list[dict[str, Any]], list[np.ndarray]]:
+
         
-        Returns:
-        -------
-        if return_type is bbox:
-            return bboxes, [peaks, counts, areas, densities]
-        """
         binary_image = (
             ( (img > self.pixel_thr).astype(np.int32) )*255
         ).astype(np.uint8)
         
         num_labels, labels_im = cv2.connectedComponents(binary_image)
-        if return_type == "mask":
-            return num_labels, labels_im
-        
-        boxes = self.get_bbox_from_mask(num_labels=num_labels, mask=labels_im, nms=nms)
-        # return [{'box':i} for i in boxes]
-        return self._bbox_post_processing(img=img, bboxes=boxes)
+  
+        boxes = self.get_bbox_from_mask(
+            img=img, num_labels=num_labels, mask=labels_im
+        )
+
+        return self.bbox_post_processing(
+            img=img, bboxes=boxes, 
+            need_crop=need_crop, 
+            topk=topk
+        )
+   
     
-    def get_bbox_from_mask(self, num_labels:int, mask:np.ndarray, nms:bool=True) -> np.ndarray:
+    def get_bbox_from_mask(self, img:np.ndarray, num_labels:int, mask:np.ndarray) -> np.ndarray: 
+        
         
         bounding_boxes = []
         # Start from 1 to ignore the background
         for label in range(1, num_labels):  
             component_mask = (mask == label).astype(np.uint8)
             coords = np.column_stack(np.where(component_mask > 0))
-            if coords.size > 0:
-                x, y, w, h = cv2.boundingRect(coords)
-                # Store as (x1, y1, x2, y2)
-                bounding_boxes.append([x, y, x + w, y + h])  
+            if coords.size/2 >= self.componet_lb:  
+                m = np.mean(img[np.where(component_mask > 0)].astype(np.float32))
+                if m >= self.rmean:  
+                    x, y, w, h = cv2.boundingRect(coords)
+                    bounding_boxes.append([x, y, x + w, y + h])  
+        
         bounding_boxes = np.asarray(bounding_boxes)
+        """
+        bounding_boxes = non_max_suppression_fast(np.asarray(bounding_boxes))
+        """
+        if len(bounding_boxes) == 0:
+            return []
+        areas = (bounding_boxes[:, 2]- bounding_boxes[: ,0])*\
+            (bounding_boxes[:, 3] - bounding_boxes[:, 1])
         
-        return bounding_boxes if not nms \
-            else non_max_suppression_fast(bounding_boxes)
+        M = bounding_boxes[np.argsort(-areas)]
+        M = merge_boxes_with_iou(M, d=self.merge_dist)
 
-    def _bbox_post_processing(self, img:np.ndarray, bboxes:np.ndarray)->Iterable[np.ndarray]:
+        return M
+    
+    def bbox_post_processing(self, img:np.ndarray, bboxes:np.ndarray, need_crop:bool, topk:int=0)->list[dict[str, Any]]|tuple[list[dict[str, Any]], list[np.ndarray]]:
+        
         if len(bboxes) == 0:
-            return [], [], []
-        
+            return ([], []) if need_crop else []
+            
         blob_crops = [crop(img=img, xyxy=bi) for bi in bboxes]
-
+     
         areas = (bboxes[:, 2]- bboxes[: ,0])*(bboxes[:, 3] - bboxes[:, 1])
-        peaks = np.array([np.max(ci) for ci in blob_crops])
-        light_counts = np.array([np.count_nonzero((ci>144).astype(np.int32)) for ci in blob_crops])
-        counts = np.array([np.count_nonzero(ci) for ci in blob_crops])
-        densities =closeness_of_dots(crops=blob_crops) #counts/areas
-        curve_densities = check_closeness_of_dots_along_curve(crops=blob_crops)
-        # check the area as well as density
+        peaks = np.asarray([np.max(ci) for ci in blob_crops])
+        counts = np.asarray([np.count_nonzero(ci) for ci in blob_crops])
+        Lcounts = np.asarray([np.count_nonzero(ci > 80) for ci in blob_crops])
+        defect_part_grayscale = np.asarray([np.mean(ci[np.where(ci>0)]) for ci in blob_crops]) 
+        
+        densities = counts/areas
+        
         valid_idxs = np.where(
-            np.any(
-                np.column_stack([peaks, areas]) >= self.low_peak_thr, 
+            np.all(
+                np.column_stack([areas, defect_part_grayscale]) >= self.box_thr,
                 axis=1
-            )
+            ) 
         )[0]
-        peak_count_area_lc = np.column_stack([peaks, counts, areas, light_counts])
-        return bboxes[valid_idxs], peak_count_area_lc[valid_idxs], \
-            np.column_stack([densities, curve_densities])[valid_idxs]
+
+        sorted_idxs = np.argsort(-areas[valid_idxs])
+        valid_idxs = valid_idxs[sorted_idxs]
+       
+        if topk > 0:
+            valid_idxs = valid_idxs[:topk]
+        # print(bboxes)
+        bboxs_des = [
+            {
+                'xyxy'  : bboxes[i],
+                'xywh':np.asarray([
+                    (bboxes[i][0] + bboxes[i][2])/2, 
+                    (bboxes[i][1] + bboxes[i][3])/2,
+                    bboxes[i][2]-bboxes[i][0], 
+                    bboxes[i][3]-bboxes[i][1]
+                ]),
+                'ncount' : counts[i],
+                'lcount' : Lcounts[i],
+                'lr'     : Lcounts[i] / counts[i],
+                'peak' : peaks[i],
+                'area'  : areas[i],
+                'density': densities[i] ,
+                'corner': is_bbox_at_edge_or_corner(
+                    bbox=bboxes[i], 
+                    image_shape=img.shape, 
+                    thr=0
+                ),
+                'avg_light':defect_part_grayscale[i]
+            }   
+            for i in valid_idxs
+        ]
+        
+        
+        del areas ,peaks, counts ,Lcounts ,defect_part_grayscale, densities
+        
+        
+        if not need_crop:
+            del blob_crops
+            gc.collect()
+            return bboxs_des
+        else:
+            gc.collect()
+            return bboxs_des, [blob_crops[i] for i in valid_idxs]
+        
