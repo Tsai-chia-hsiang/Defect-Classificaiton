@@ -65,5 +65,5 @@ def write_patches():
 if __name__ == "__main__":
     VISSAVE.mkdir(exist_ok=True, parents=True)
     PATCHSAVE.mkdir(exist_ok=True, parents=True)
-    #unit_test()
-    write_patches()
+    unit_test()
+    #write_patches()
