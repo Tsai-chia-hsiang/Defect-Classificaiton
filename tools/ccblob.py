@@ -1,6 +1,8 @@
 from typing import Literal, Any, Iterable
 import cv2
 import numpy as np
+from scipy.spatial.distance import pdist
+from scipy.interpolate import splprep, splev
 
 def non_max_suppression_fast(boxes:np.ndarray, overlapThresh:float=0.3) -> np.ndarray:
     if len(boxes) == 0:
@@ -49,15 +51,54 @@ def crop(img:np.ndarray, xyxy:np.ndarray)->np.ndarray:
    
     return img[xyxy[0]:xyxy[2], xyxy[1]:xyxy[3], ...]
 
+
+def closeness_of_dots(crops):
+    results = []
+    for roi in crops:
+        # Find the dots within the bounding box
+        dot_coords = np.column_stack(np.where(roi > 80))
+        
+        if len(dot_coords) > 1:
+            distances = np.sqrt(np.sum((dot_coords[:, np.newaxis] - dot_coords[np.newaxis, :])**2, axis=2))
+            mean_distance = np.mean(distances)
+            results.append(mean_distance)
+        else:
+            results.append(float('inf'))
+    
+    return np.asarray(results)
+
+
+def check_closeness_of_dots_along_curve(crops):
+    results = []
+    for roi in crops:
+        
+        # Find the dots within the bounding box
+        dot_coords = np.column_stack(np.where(roi > 0))
+        
+        if len(dot_coords) >= 4:
+            # Fit a spline to the dots
+            tck, u = splprep([dot_coords[:, 1], dot_coords[:, 0]], s=0)
+            new_points = splev(u, tck)
+            curve_coords = np.column_stack(new_points)
+            
+            # Calculate pairwise distances along the curve
+            distances = pdist(curve_coords, 'euclidean')
+            min_distance = np.min(distances)
+            results.append(min_distance)
+        else:
+            results.append(float('inf'))
+    
+    return np.asarray(results)
+
 class ConnectedComponetBlob():
 
-    def __init__(self, pixel_value_thr:int=0, blob_area_lowerbound:int=180, peak_lowerbound:int=160, density_lowerbound:float=0.4):
+    def __init__(self, pixel_value_thr:int=0, blob_area_lowerbound:int=180, peak_lowerbound:int=160):
         
         self.pixel_thr = pixel_value_thr
         self.peak_lb = peak_lowerbound
         self.area_lb = blob_area_lowerbound
-        self.density_lb = density_lowerbound
-        self.low_peak_thr = np.array([blob_area_lowerbound, density_lowerbound])
+        
+        self.low_peak_thr = np.array([peak_lowerbound, blob_area_lowerbound])
     
     def __call__(self, img:np.ndarray, return_type:Literal["mask", "bbox"]="bbox", nms:bool=True, input_color_mode:Literal["RGB","BGR"]="BGR") -> tuple[int, np.ndarray] | Iterable[np.ndarray]:
         """
@@ -103,25 +144,17 @@ class ConnectedComponetBlob():
 
         areas = (bboxes[:, 2]- bboxes[: ,0])*(bboxes[:, 3] - bboxes[:, 1])
         peaks = np.array([np.max(ci) for ci in blob_crops])
-        #counts = np.array([np.count_nonzero((ci>20).astype(np.int32)) for ci in blob_crops])
+        light_counts = np.array([np.count_nonzero((ci>144).astype(np.int32)) for ci in blob_crops])
         counts = np.array([np.count_nonzero(ci) for ci in blob_crops])
-        densities = counts/areas
-       
-        # condition = np.column_stack([areas, peaks])
-        # comparison_result = condition >= self.boxes_thr[:2]
-        # valid_idxs = np.where(np.any(comparison_result, axis=1))[0]
-        
-        # directly approval since it contains high peak value
-        peak_valid = np.where(peaks >= self.peak_lb)[0]
-
+        densities =closeness_of_dots(crops=blob_crops) #counts/areas
+        curve_densities = check_closeness_of_dots_along_curve(crops=blob_crops)
         # check the area as well as density
-        low_peak_valid = np.where(
-            np.all(
-                np.column_stack([areas, densities]) >= self.low_peak_thr, 
+        valid_idxs = np.where(
+            np.any(
+                np.column_stack([peaks, areas]) >= self.low_peak_thr, 
                 axis=1
             )
         )[0]
-        
-        valid_idxs = np.union1d(peak_valid, low_peak_valid)
-        peak_count_area = np.column_stack([peaks, counts, areas])
-        return bboxes[valid_idxs], peak_count_area[valid_idxs], densities[valid_idxs]
+        peak_count_area_lc = np.column_stack([peaks, counts, areas, light_counts])
+        return bboxes[valid_idxs], peak_count_area_lc[valid_idxs], \
+            np.column_stack([densities, curve_densities])[valid_idxs]
