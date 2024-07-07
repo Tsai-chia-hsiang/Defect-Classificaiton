@@ -11,7 +11,7 @@ class ConnectedComponetBlob():
         min_pixels_per_comp:int=20, 
         blob_area_lowerbound:int=80, 
         region_mean:float=30,
-        box_gray_lowerbound:float=25,
+        box_lightcnt_lowerbound:float=25,
         box_merge_distance:float=10
     ):
         
@@ -20,8 +20,8 @@ class ConnectedComponetBlob():
         self.rmean = region_mean
         self.merge_dist = box_merge_distance
         self.area_lb = blob_area_lowerbound
-        self.box_gray_lb = box_gray_lowerbound
-        self.box_thr = np.array([self.area_lb, box_gray_lowerbound])
+        self.box_gray_lb = box_lightcnt_lowerbound
+        self.box_thr = np.array([self.area_lb,  box_lightcnt_lowerbound])
     
     def __call__(self, img:np.ndarray, need_crop:bool=True, topk:int=0) -> list[dict[str, Any]]|tuple[list[dict[str, Any]], list[np.ndarray]]:
 
@@ -78,7 +78,7 @@ class ConnectedComponetBlob():
         areas = (bboxes[:, 2]- bboxes[: ,0])*(bboxes[:, 3] - bboxes[:, 1])
         peaks = np.asarray([np.max(ci) for ci in blob_crops])
         counts = np.asarray([np.count_nonzero(ci) for ci in blob_crops])
-        Lcounts = np.asarray([np.count_nonzero(ci > 80) for ci in blob_crops])
+        Lcounts = np.asarray([np.count_nonzero(ci > 60) for ci in blob_crops])
         defect_part_grayscale = np.asarray([np.mean(ci[np.where(ci>0)]) for ci in blob_crops]) 
         
         densities = counts/areas
@@ -105,10 +105,7 @@ class ConnectedComponetBlob():
                     bboxes[i][2]-bboxes[i][0], 
                     bboxes[i][3]-bboxes[i][1]
                 ]),
-                'ncount' : counts[i],
                 'lcount' : Lcounts[i],
-                'lr'     : Lcounts[i] / counts[i],
-                'peak' : peaks[i],
                 'area'  : areas[i],
                 'density': densities[i] ,
                 'corner': is_bbox_at_edge_or_corner(
@@ -133,3 +130,10 @@ class ConnectedComponetBlob():
             gc.collect()
             return bboxs_des, [blob_crops[i] for i in valid_idxs]
         
+
+"""                
+'ncount' : counts[i],
+
+'lr'     : Lcounts[i] / counts[i],
+'peak' : peaks[i],
+"""
