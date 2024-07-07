@@ -1,7 +1,7 @@
 */*/*.pyc
 */*/*.pt
 .vscode
-dataset/5foldcv
+table/5foldcv
 dataset/**/*.jpg
 dataset/**/*.zip
 ckpt/**/*.jpg

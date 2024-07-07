@@ -1,6 +1,6 @@
 CKPT_DIR=./ckpt/release
-TABLE_ROOT=./dataset/release
-LABEL_MAP=./dataset/label.json
+TABLE_ROOT=./table/release
+LABEL_MAP=./table/label.json
 MODEL=resnet50
 LR=0.001
 PATIENT=30

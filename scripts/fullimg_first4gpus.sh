@@ -1,6 +1,6 @@
 CKPT_DIR=./ckpt/test
-TABLE_ROOT=./dataset/pretest
-LABEL_MAP=./dataset/label.json
+TABLE_ROOT=./table/pretest
+LABEL_MAP=./table/label.json
 MODEL=resnet50
 LR=0.001
 PATIENT=30
