@@ -1,5 +1,5 @@
 CKPT_DIR=./ckpt/test
-TABLE_ROOT=./dataset/train_valid_test
+TABLE_ROOT=./dataset/pretest
 LABEL_MAP=./dataset/label.json
 MODEL=resnet50
 LR=0.001
