@@ -1,81 +1,60 @@
+from typing import Literal
 import torch
 import torch.nn as nn
 from torchvision import models
-
-_split_line = "="*15
+import torch.nn.functional as F 
 
 class _ResNet_with_coo(nn.Module):
     
-    def __init__(self, backbone:nn.Module, fout:int, ncls:int, deep:int):
+    def __init__(self, backbone:nn.Module, ncls:int, deep:int):
         super(_ResNet_with_coo, self).__init__()
         # Copy all layers except the fully connected layer
         self.deep = deep
         self.features = nn.Sequential(*list(backbone.children())[:-1])
-        self.fc:nn.Linear = nn.Linear(in_features=fout, out_features=ncls, bias=True)
-        self.pos_head = nn.Sequential(
-            *[
-                nn.Linear(4, fout),
-                nn.ReLU(),
-                nn.BatchNorm1d(fout)
-            ]
-        )
-    
-    def forward(self, x:torch.Tensor, coo:torch.Tensor):
+        self.global_avg_pool = nn.AdaptiveAvgPool2d((1, 1))
+        self.fc:nn.Linear = nn.Linear(in_features=backbone.fc.in_features, out_features=ncls, bias=True)
+ 
+    def single_forward(self, x:torch.Tensor) -> torch.Tensor:
         x = self.features(x)
-        x = torch.flatten(x, 1)
-        coo = self.pos_head(coo)
-        return self.fc(x+coo)
-        #self.fc(torch.concat((x, coo), dim=1))
+        x = x.flatten(1, -1)
+        x = x.mean(dim=0, keepdim=True)
+        return x
+        
+    def forward(self, x:list[torch.Tensor]) -> torch.Tensor:
+        
+        xj:torch.Tensor = None
+        if len(x) == 1:
+            # single image
+            xj = self.single_forward(x[0])
+        else:
+            # a batch
+            xj = torch.vstack([self.single_forward(xi) for xi in x])
+        return self.fc(xj)
     
     def __repr__(self):
         return f"resnet{self.deep} with coo"
 
-def resnet_18(grayscale=True, ncls:int=4, coo:bool=False):
-    model = models.resnet18(weights='DEFAULT')
 
-    # Modify the first convolutional layer to accept a single channel (grayscale) input
-    if grayscale:
-        model.conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
-    if not coo:
-        model.fc = nn.Linear(in_features=512, out_features=ncls, bias=True)
-        print(f"{_split_line} model : Resnet18 {_split_line}")
-    else:
-        model = _ResNet_with_coo(backbone=model, deep=18, fout=512, ncls=ncls)
 
-        print(f"{_split_line} model : {model} {_split_line}")
-    return model
+_ResNet_map = {
+    '18':models.resnet18(weights='DEFAULT'),
+    '34':models.resnet34(weights='DEFAULT'),
+    '50':models.resnet50(weights='DEFAULT')
+}
 
-def resnet_34(grayscale=True, ncls:int=4, coo:bool=False):
-    model = models.resnet34(weights='DEFAULT')
-
-    # Modify the first convolutional layer to accept a single channel (grayscale) input
-    if grayscale:
-        model.conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
+def resnet(grayscale=True, ncls:int=4, coo:bool=False, encoder_depth:Literal['18','34','50'] = '50'):
+    
+    pretrained = _ResNet_map[encoder_depth]
+ 
+    in_channels = 1 if grayscale else 3
+    if coo:
+        in_channels += 4
+    
+    pretrained.conv1 = nn.Conv2d(in_channels, 64, kernel_size=7, stride=2, padding=3, bias=False)
     
     if not coo:
-        model.fc = nn.Linear(in_features=512, out_features=ncls, bias=True)
-        print(f"{_split_line} model : Resnet34 {_split_line}")
-    else:
-        model = _ResNet_with_coo(backbone=model, deep=34, fout=512, ncls=ncls)
-        print(f"{_split_line} model : {model} {_split_line}")
-    return model
-
-def resnet_50(grayscale=True, ncls:int=4, coo:bool=False):
-    model = models.resnet50(weights='DEFAULT')
-
-    # Modify the first convolutional layer to accept a single channel (grayscale) input
-    if grayscale:
-        model.conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
-    if not coo:
-        model.fc = nn.Linear(in_features=2048, out_features=ncls, bias=True)
-        print(f"{_split_line} model : Resnet50 {_split_line}")
-    else:
-        model = _ResNet_with_coo(backbone=model, deep=50, fout=2048, ncls=ncls)
-        print(f"{_split_line} model : {model} {_split_line}")
-    
-    return model
-
-
-if __name__ == "__main__":
-    rn18 = resnet_18(grayscale=True, ncls=4)
-    print(rn18)
+        # simple classification model 
+        pretrained.fc = nn.Linear(in_features=pretrained.fc.in_features, out_features=ncls, bias=True)
+        return pretrained
+    pretrained = _ResNet_with_coo(ncls=ncls, backbone=pretrained, deep=int(encoder_depth))
+    return pretrained

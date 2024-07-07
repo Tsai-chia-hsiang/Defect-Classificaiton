@@ -12,14 +12,12 @@ from torch.nn import CrossEntropyLoss
 from torch.utils.data import DataLoader
 from torch.optim import Optimizer, Adam
 from .lossfunc import build_cls_criteria, FocalLoss
-from tools.dataset import Big_Data_IMG, G_normalizor, extract_label
+from tools.dataset import Big_Data_IMG, Patch_IMG, G_normalizor, extract_label
 from tools.plt_tools import plot_curves
 
 def print_cls_metrics(t:dict):
     for k,v in t.items():
         print(f"{k} : {v[0]}/{v[1]}={v[2]:.3f}")
-
-
 
 def forward_one_epoch(
     model:nn.Module, loader:DataLoader, device:torch.device, 
@@ -37,7 +35,6 @@ def forward_one_epoch(
     if return_prediction = True, will attach a dict for gt as well prediction and file path
 
     """
-    contain_coo = loader.dataset.contain_coo
     total_loss = 0
     pred_gt_df = {'gt':[], 'pred':[], 'file':[]}
     
@@ -49,18 +46,16 @@ def forward_one_epoch(
         # test
         model.eval()
         torch.set_grad_enabled(False)
-
-    pi, batch_img, batch_coo, li, y = None, None, None, None, None
-    for  X in tqdm(loader):
+    y = None
+    for pi, batch_img, li in tqdm(loader):
         
         if optr is not None:
             optr.zero_grad()
-        
-        if contain_coo:
-            pi, batch_img, batch_coo, li = X
-            y = model(batch_img.to(device=device),  batch_coo.to(device=device))
-        else:
-            pi, batch_img, li = X
+        if isinstance(batch_img, list):
+            # patch
+            y = model([patch.to(device=device) for patch in batch_img])
+        elif isinstance(batch_img, torch.Tensor):
+            # full image
             y = model(batch_img.to(device=device))
         
         if criteria is not None:
@@ -83,6 +78,7 @@ def forward_one_epoch(
         f1_score(y_true=pred_gt_df['gt'], y_pred=pred_gt_df['pred'], average='macro'), 
         recall_score(y_true=pred_gt_df['gt'], y_pred=pred_gt_df['pred'], average='macro')
     ]
+    
     if each_cls_recall:
 
         gt_array = np.array(pred_gt_df['gt'], dtype=np.int32)
@@ -126,7 +122,10 @@ def train(
     loader = {
         mode:DataLoader(
             dataset=dataset[mode], batch_size=batchsize, 
-            shuffle=True, generator=g
+            shuffle=True, generator=g, 
+            collate_fn=Patch_IMG.collate_fn \
+                if isinstance(dataset[mode], Patch_IMG) \
+                else None
         )
         for mode in ['train', 'valid']
     }
@@ -195,7 +194,8 @@ def train(
                     stop_count += 1
             print(f"{mode} {e} time: {e_end - e_start:.3f} secs | loss : {metrics[mode]['loss'][e]:.3f} | acc: {metrics[mode]['accuracy'][e]:.3f}")
             print(f"f1 : {metrics[mode]['macro_f1'][e]:.3f}, best f1 : {best_val_metrics:.3f}, save model : {saved}")
-            print(f"stop count :{stop_count}")
+            if mode == "valid":
+                print(f"stop count :{stop_count}")
             print(f"recall: {metrics[mode]['macro_recall'][e]:.3f}")
             print_cls_metrics(cls_recall)
         
@@ -228,7 +228,10 @@ def train(
 def test(model:nn.Module, test_dataset:Big_Data_IMG, dev, batchsize = 40) -> tuple[float, float, float, dict[int, tuple], pd.DataFrame, pd.DataFrame]:
     
     model = model.eval().to(device=dev)
-    testloader = DataLoader(dataset=test_dataset, batch_size=batchsize) 
+    testloader = DataLoader(
+        dataset=test_dataset, batch_size=batchsize,
+        collate_fn=Patch_IMG.collate_fn if isinstance(test_dataset, Patch_IMG) else None
+    ) 
 
     _, acc, f1, recall, cls_recall, pred_df = forward_one_epoch(
         model = model, loader = testloader, device=dev,
