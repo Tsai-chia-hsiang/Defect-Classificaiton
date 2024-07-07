@@ -1,4 +1,4 @@
-from typing import Literal, Any, Iterable
+from typing import Any
 import cv2
 import gc
 import numpy as np
@@ -41,7 +41,6 @@ class ConnectedComponetBlob():
             need_crop=need_crop, 
             topk=topk
         )
-   
     
     def get_bbox_from_mask(self, img:np.ndarray, num_labels:int, mask:np.ndarray) -> np.ndarray: 
         
@@ -58,9 +57,7 @@ class ConnectedComponetBlob():
                     bounding_boxes.append([x, y, x + w, y + h])  
         
         bounding_boxes = np.asarray(bounding_boxes)
-        """
-        bounding_boxes = non_max_suppression_fast(np.asarray(bounding_boxes))
-        """
+
         if len(bounding_boxes) == 0:
             return []
         areas = (bounding_boxes[:, 2]- bounding_boxes[: ,0])*\
