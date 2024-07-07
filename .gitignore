@@ -7,3 +7,4 @@ dataset/**/*.zip
 ckpt/**/*.jpg
 ckpt/**/*.csv
 ckpt/**/*.pt
+scripts/simi_challenger.sh
