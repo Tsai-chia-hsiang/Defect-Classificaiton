@@ -14,10 +14,11 @@ def parsing():
     p = argparse.ArgumentParser()
     
     # dataset metadata
-    p.add_argument("--data_table", type=Path, default=Path("dataset")/"train_valid_test"/"baseline.json")
-    p.add_argument("--label_map", type=Path, default=Path("dataset")/"label.json")
+    p.add_argument("--data_table", type=Path, default=Path("table")/"release_train.json")
+    p.add_argument("--label_map", type=Path, default=Path("table")/"label.json")
     p.add_argument("--dtype", type=str, default="fullimg")
     p.add_argument("--log_smooth", action='store_true')
+    
     # hyper parameters
     p.add_argument("--epochs", type=int, default=50)
     p.add_argument("--batchsize", type=int, default=40)
@@ -53,10 +54,11 @@ if __name__ == "__main__":
     data_table = read_json(args.data_table)
     print(f"from {args.data_table} reading all data")
     print(f"class-label map: {label_map}")
-
-    print(f"settings :")
-    print(f"lr: {args.lr}, epochs : {args.epochs}, batchsize : {args.batchsize}")
-  
+    
+    if args.train:
+        print(f"settings :")
+        print(f"lr: {args.lr}, epochs : {args.epochs}, batchsize : {args.batchsize}")
+    
 
     dataset = build_datasets(
         file_table = data_table, 
@@ -74,11 +76,16 @@ if __name__ == "__main__":
     elif 'test' in dataset:
         contain_coo = dataset['test'].contain_coo
 
-    model = MODEL_MAP[args.using_model](
-        grayscale=True, 
-        ncls=len(label_map),
-        coo = contain_coo
-    )
+
+    if 'resnet' in args.using_model:
+        depth = args.using_model[6:]
+        model = MODEL_MAP['resnet'](
+            grayscale=True, ncls=len(label_map), 
+            coo = contain_coo, encoder_depth = depth
+            # len('resnet') = 6
+        )
+    print(model)
+
     model_name = f"{args.using_model}.pt"
 
     if args.train:
