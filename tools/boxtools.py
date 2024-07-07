@@ -241,23 +241,36 @@ def non_max_suppression_fast(boxes:np.ndarray, overlapThresh:float=0.3) -> list:
     # Return only the bounding boxes that were picked
     return boxes[pick].astype(np.int32)
 
-def is_bbox_at_edge_or_corner(bbox, image_shape, thr = 10) -> bool:
+def is_bbox_at_edge_or_corner(bbox, image_shape, thr = 10) -> list[str]:
+
+    """
+    Warning ! this is for cv2 image with (height, width)
+    """
 
     x_min, y_min, x_max, y_max = bbox
-    width, height  = image_shape[:2]
+    height ,width, = image_shape[:2]
     
-    left_margin = x_min
-    right_margin = width - x_max
-    top_margin = y_min
-    bottom_margin = height - y_max
-    #print(bbox)
-    #print(left_margin, top_margin, right_margin,  bottom_margin)
-    #print(right_margin, thr, right_margin < thr)
-    W = (left_margin <= thr) or (right_margin <= thr)
-    #print(W)
-    H = (top_margin <= thr) or (bottom_margin <= thr)
-    #print(H)
-    return (W or H)
+    top_margin = x_min
+    bottom_margin = height - x_max
+    left_margin = y_min
+    right_margin = width - y_max
+
+    # [(top or bottom), (left or right)]
+    edge_flage = [None, None]
+    if top_margin <= thr or bottom_margin <= thr:
+        if top_margin <= thr:
+            edge_flage[0] = "t"
+        else:
+            edge_flage[0] = "b"
+
+    # Left-Right
+    if left_margin <= thr or right_margin <= thr:
+        if left_margin <= thr:
+            edge_flage[1] = "l"
+        else:
+            edge_flage[1] = "r"
+
+    return edge_flage if any(edge_flage) else []
 
 def print_box(box:dict, bid=None)->str:
     f = "" if bid is None else f"{bid}\n"
