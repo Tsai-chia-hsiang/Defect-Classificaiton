@@ -1,4 +1,5 @@
 import os
+from typing import Any, Callable, Optional
 from typing import Literal
 from pathlib import Path
 from tqdm import tqdm
@@ -9,6 +10,8 @@ from torchvision import transforms
 from torch.utils.data import Dataset
 from .boxtools import normalize_box
 
+def flatten(xss:list[list[Any]]) -> list[Any]:
+    return [x for xs in xss for x in xs]
 
 def get_origin_data_files(root:Path, only_origin=True) -> dict[str, list[Path]]:
     
@@ -41,125 +44,164 @@ G_patch_normalizor = transforms.Compose(
     ]
 )
 
-class Big_Data_IMG(Dataset):
+
+class _Img_Dataset(Dataset):
     
-    def __init__(self, img_path_list:list[str], label_map:dict[str, int], log_smooth:bool=True, **kwargs) -> None:
-        
+    def __init__(self, img_path:list[os.PathLike], label_map:dict[str, int], T:Callable) -> None:
         super().__init__()
+        self.T:Callable = T
+        self.ndata = len(img_path)
+        self.img_path = img_path
+        self.contain_coo = False
         self.label_cls_map = label_map.copy()
         self.cls_label_map:dict[int, str] = {v:k for k,v in label_map.items()}
-        self.contain_coo = False
-        self.nimg = len(img_path_list)
         self.ncls = len(self.cls_label_map)
-        self.cls_count = torch.zeros((self.ncls))
-        self.datatype = "img"
-        self.img_with_label = [
-            (i,  self._get_and_accumu_cls(label=i)) 
-            for i in img_path_list
-        ]
-        self.cls_w = self.nimg/self.cls_count
-        if log_smooth:
-            self.cls_w = torch.log(self.cls_w)
-        
-    def _get_and_accumu_cls(self, label:str)->torch.Tensor:
-        
-        ci =  self.label_cls_map[extract_label(label)]
-        self.cls_count[ci] += 1
-        
-        return torch.tensor(ci, dtype=torch.long)
-    
-    def __getitem__(self, index) -> tuple[str, torch.Tensor, torch.Tensor]:
 
-        # assert self.cls_label_map[self.img_with_label[index][1].item()] == extract_label(self.img_with_label[index][0]) 
-        img = G_normalizor(
-            Image.open(self.img_with_label[index][0]).convert("L")
+        self.dtype:str="basic"
+        
+        self.label, self.cls_count = self._get_label(imgpath=self.img_path) 
+        self.cls_w = self.ndata/self.cls_count
+
+    def _get_label(self, imgpath:list[os.PathLike]) -> tuple[torch.Tensor, torch.Tensor]:
+        
+        label = torch.tensor(
+            [self.label_cls_map[extract_label(i)] for i in imgpath],
+            dtype=torch.long
         )
-        return (self.img_with_label[index][0], img, self.img_with_label[index][1])
+        v, cnt = torch.unique(label, return_counts=True)
+        cnt = (cnt[torch.argsort(v)]).to(dtype=torch.float)
+        return label, cnt
     
-    def __len__(self)->int:
-        return self.nimg
+    def __len__(self) -> int:
+        return self.ndata
+    
+    def _imread(self, imgpath:str)->torch.Tensor:
+        return self.T(Image.open(imgpath).convert("L"))
+    
+    def __repr__(self) -> str:
+        return "basic, should not use"
+
+class FullImg_Dataset(_Img_Dataset):
+
+    def __init__(self, img_path:list[os.PathLike], label_map:dict[str, int], **kwargs) -> None:
+        
+        super().__init__(img_path=img_path, label_map=label_map, T=G_normalizor)
+        
+        self.dtype = "img"
+        
+    def __getitem__(self, index) -> tuple[os.PathLike, torch.Tensor, torch.Tensor]:
+    
+        return (
+            self.img_path[index], 
+            self._imread(self.img_path[index]), 
+            self.label[index]
+        )
     
     def __repr__(self) -> str:
         return "full image dataset"
 
-class Patch_IMG(Big_Data_IMG):
+class PatchImg_Dataset(_Img_Dataset):
     
-    def __init__(self, img_path_list: list[str], label_map: dict[str, int], patch_path_list:list[list[str]], coordinate:list[torch.Tensor] = None, log_smooth: bool = True) -> None:
-        
-        super().__init__(img_path_list, label_map, log_smooth)
-        
-        self.patch_path_list = patch_path_list
-        self.coo = coordinate if coordinate is not None else None
-        self.contain_coo = coordinate is not None
-
-    def _read_a_patch_for_one_img(self, pi:str, coo_i:torch.Tensor = None):
-        
-        def extend_coor(img:torch.Tensor, coo:torch.Tensor, patch_size:tuple[int,int]=(224,224)) -> torch.Tensor:
-            x = coo.unsqueeze(1).unsqueeze(2)
-            x = x.expand(-1, patch_size[0], patch_size[1])
-            return torch.cat((img, x), dim=0)
-        
-        pimg = G_patch_normalizor(Image.open(pi).convert("L"))
-        if coo_i is not None:
-            pimg = extend_coor(img=pimg,coo = coo_i) 
-        
-        return pimg
-    
-    def __getitem__(self, index) -> tuple[str, torch.Tensor, torch.Tensor]:
-        
-        src_patch_gen = zip(
-            self.patch_path_list[index], self.coo[index]
-        ) if self.contain_coo else \
-        ((path, None) for path in self.patch_path_list[index])
-
-        patches = torch.stack(
-            [self._read_a_patch_for_one_img(*x) for x in src_patch_gen], 
-            dim=0
+    def __init__(
+        self, patch_path: list[os.PathLike], label_map: dict[str, int], 
+        img_path:Optional[list[os.PathLike]],
+        coor:Optional[list[torch.Tensor]],
+        independent:bool=False,  
+        coor_using:Literal['channel', "pos"] = "pos"
+    ) -> None:
+       
+        super().__init__(
+            img_path = flatten(patch_path) if independent else img_path, 
+            label_map=label_map, T=G_patch_normalizor
         )
 
-        return (self.img_with_label[index][0], patches, self.img_with_label[index][1])
+        self.independent = independent
+
+        # for aggregate patches using
+        self.src_path = img_path if not independent else None
+        self.patch_path = patch_path if not independent else None
+        
+        
+        self.contain_coo =True
+        self.coor = flatten(coor) if independent else coor
+        self.coor_using = coor_using
+
+    def _fetch_one_patch(self, patch_path:os.PathLike, c:torch.Tensor)->torch.Tensor|tuple[torch.Tensor, torch.Tensor]:
+        
+        if self.coor_using == "channel":
+            return PatchImg_Dataset.extend_coor(img=self._imread(imgpath=patch_path), coo=c) 
+        
+        elif self.coor_using == "pos":
+            return self._imread(imgpath=patch_path), c
+    
+    def __getitem__(self, index) -> tuple[os.PathLike, torch.Tensor, torch.Tensor]|tuple[os.PathLike, torch.Tensor, torch.Tensor, torch.Tensor]:
+        
+        p = None 
+        c = None
+        if not self.independent:
+            # aggregate all patches for an image
+            patch = [
+                self._fetch_one_patch(pi, ci) for pi, ci in 
+                zip(self.patch_path[index], self.coor[index])
+            ]
+            if self.coor_using == "pos":
+                p = torch.stack([_[0] for _ in patch]) 
+                c = torch.stack([_[1] for _ in patch])
+            else:
+        
+                p = torch.stack(patch)
+        else:
+            
+            patch = self._fetch_one_patch(self.img_path[index], c=self.coor[index])
+            if self.coor_using == "pos":
+                p = patch[0]
+                c = patch[1]
+            else:
+                p = patch
+        
+        index_img_path = self.src_path[index] if self.src_path is not None else self.img_path[index]
+        
+        if self.coor_using == "pos": 
+        
+            return index_img_path, (p, c), self.label[index]
+        
+        # print(index_img_path, p.size(), self.label[index])
+
+        return index_img_path, p, self.label[index]
     
     def __repr__(self) -> str:
-        return "patch image dataset" if not self.contain_coo else "patch image with coo dataset" 
-
-    @staticmethod
-    def collate_fn(batch)->tuple[tuple[Path], list[torch.Tensor], torch.Tensor]:
-        src_path = tuple([i[0] for i in batch])
-        patches = list(i[1] for i in batch)
-        label = torch.stack([i[2] for i in batch])
-        return src_path, patches, label
-        
-
-class Feature_Data(Big_Data_IMG):
+        return f"{'independent' if self.independent else 'agg'} patch image dataset with coo {self.coor_using}"
     
-    def __init__(self, img_path_list: list[Path], label_map: dict[str, int], log_smooth: bool = True) -> None:
-        super().__init__(img_path_list, label_map, log_smooth)
-        self.features = np.vstack([np.load(i[0]) for i in self.img_with_label])
-        self.features /= (np.max(np.abs(self.features), axis=1, keepdims=True)+ 1e-8)
-        self.features = torch.from_numpy(self.features)
-        self.features = self.features.to(dtype=torch.float32)
-        
-    def __getitem__(self, index) -> tuple[Path, torch.Tensor, torch.Tensor]:
-        
-        return (
-            self.img_with_label[index][0], 
-            self.features[index], 
-            self.img_with_label[index][1]
-        )
-      
+    @staticmethod
+    def extend_coor(img:torch.Tensor, coo:torch.Tensor) -> torch.Tensor:
+        x = coo.unsqueeze(1).unsqueeze(2)
+        x = x.expand(-1, img.size(1), img.size(2))
+        return torch.cat((img, x), dim=0)
+
+def patch_agg_collate_fn(batch)->tuple[tuple[Path], Any, torch.Tensor]:
+    """
+    Returns
+    ------
+    imgpath, [xi], label
+    """
+    src_path = tuple([i[0] for i in batch])
+    patches = list(i[1] for i in batch)
+    label = torch.stack([i[2] for i in batch])
+    
+    return src_path, patches, label
 
 
 _DTYPE_DATASET_MAP = {
-    "fullimg":Big_Data_IMG,
-    "patchimg":Patch_IMG,
-    "feature":Feature_Data
+    "fullimg":FullImg_Dataset,
+    "patch":PatchImg_Dataset
 }
 
 def build_datasets(
-    file_table:dict, label_map:dict[str, int], 
-    dtype:Literal["fullimg", "patch", "feature"]="fullimg", 
-    w_log_smooth:bool=True, src_wh:list[float] = None
-) -> dict[str, Big_Data_IMG]:
+    file_table:dict[str, dict[str, Any]], label_map:dict[str, int],
+    dtype:Literal["fullimg", "patch"]="fullimg", 
+    coor_using:Literal["pos", "channel"] = "pos",
+    patch_independent:bool=False, src_wh:list[float] = None
+) -> dict[str, _Img_Dataset]:
     
     table = {'train' :[], 'valid':[],'test':[]}
     coo_table = {'train':[], 'valid':[], 'test':[]}
@@ -173,22 +215,24 @@ def build_datasets(
                 coo_flag = True
                 for img_patch in vi:
                     src_img_path = list(img_patch.keys())[0]
-                    table[task].append(src_img_path)
-                    patch_table[task].append([_[0] for _  in img_patch[src_img_path]])
-                    coo_table[task].append([_[1] for _  in img_patch[src_img_path]])
+                    if len(img_patch[src_img_path]):
+                        table[task].append(src_img_path)
+                        patch_table[task].append([_[0] for _  in img_patch[src_img_path]])
+                        coo_table[task].append([_[1] for _  in img_patch[src_img_path]])
     for task in coo_table:
         if coo_flag:
             coo_table[task]=[normalize_box(torch.tensor(i), *src_wh) for i in coo_table[task] ]
-    
+
     print(label_map)
 
     d = {
         k: _DTYPE_DATASET_MAP[dtype](
-            img_path_list=v, 
+            img_path=v, 
             label_map=label_map , 
-            log_smooth=w_log_smooth, 
-            coordinate=coo_table[k],
-            patch_path_list=patch_table[k]
+            coor=coo_table[k],
+            patch_path=patch_table[k],
+            independent = patch_independent,
+            coor_using = coor_using
         )
         for k, v in table.items() if len(v)
     }
@@ -196,4 +240,3 @@ def build_datasets(
         print(f"-- {k} : {v} --")
 
     return d
-
