@@ -4,7 +4,7 @@ from time import time
 import torch
 from tools.torchtools import set_seed
 set_seed(seed=891122)
-from tools.dataset import build_datasets
+from tools.dataset import build_datasets, patch_agg_collate_fn
 from tools.io import read_json
 from model import remove_module_prefix
 from model import MODEL_MAP
@@ -17,8 +17,9 @@ def parsing():
     p.add_argument("--data_table", type=Path, default=Path("table")/"release_train.json")
     p.add_argument("--label_map", type=Path, default=Path("table")/"label.json")
     p.add_argument("--dtype", type=str, default="fullimg")
-    p.add_argument("--log_smooth", action='store_true')
-    
+    p.add_argument("--patch_independent", action='store_true')
+    p.add_argument("--coor", type=str, default="pos")
+
     # hyper parameters
     p.add_argument("--epochs", type=int, default=50)
     p.add_argument("--batchsize", type=int, default=40)
@@ -59,12 +60,12 @@ if __name__ == "__main__":
         print(f"settings :")
         print(f"lr: {args.lr}, epochs : {args.epochs}, batchsize : {args.batchsize}")
     
-
     dataset = build_datasets(
         file_table = data_table, 
-        label_map = label_map,
-        w_log_smooth = args.log_smooth, 
-        dtype=args.dtype,
+        label_map = label_map, 
+        coor_using=args.coor,
+        dtype=args.dtype, 
+        patch_independent=args.patch_independent,
         src_wh=[763, 463]
     )
     
@@ -81,27 +82,31 @@ if __name__ == "__main__":
         depth = args.using_model[6:]
         model = MODEL_MAP['resnet'](
             grayscale=True, ncls=len(label_map), 
-            coo = contain_coo, encoder_depth = depth
-            # len('resnet') = 6
+            coo = contain_coo, encoder_depth = depth,
+            pos_emd = args.coor == "pos", 
+            patch_agg = not args.patch_independent
         )
-    print(model)
 
+ 
+    collect_fn = None 
+    if args.dtype == 'patch' and not args.patch_independent :
+        collect_fn = patch_agg_collate_fn
+    print(collect_fn)
     model_name = f"{args.using_model}.pt"
 
     if args.train:
         print(f"model will be saved at {ckpt_dir/model_name}")
         s = time()
         train(
-            model = model, 
-            dataset=dataset, epochs=args.epochs, 
+            model = model, dataset=dataset, loader_collection=collect_fn, 
             ckpt_dir=ckpt_dir, model_name=model_name,
-            batchsize=args.batchsize, early_stop=args.patient,
-            lr=args.lr, return_model=False,
-            cls_loss = args.loss, focal_gamma=args.focal_gamma, 
+            cls_loss = args.loss, focal_gamma=args.focal_gamma,
+            epochs=args.epochs, batchsize=args.batchsize, lr=args.lr, early_stop=args.patient,
             loss_weight={
                 'train':dataset['train'].cls_w if args.weight_loss else None,
                 'valid':dataset['valid'].cls_w if args.weight_loss else None
-            }
+            },
+            return_model=False
         )
         t = time()
         print(f"training using {(t-s)/60} mins.")
@@ -117,7 +122,8 @@ if __name__ == "__main__":
         acc, f1, recall, cls_recall, pred_df, error_df = test(
             model = model, dev = torch.device(f"cuda:0"), 
             test_dataset = dataset['test'], 
-            batchsize = 30
+            loader_collection=collect_fn,
+            batchsize = 60
         )
         
         print(f"accuracy : {acc:.3f}, f1 : {f1:.3f}")
