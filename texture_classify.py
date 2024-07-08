@@ -21,20 +21,16 @@ if __name__ == "__main__":
     parser.add_argument("--predict_csv", type=Path)
     args = parser.parse_args()
 
-    src_root = Path("./dataset/p2")
-    data_table = read_json("dataset/train_valid_test/baseline.json")
+    src_root = Path("./dataset/source")
+    data_table = read_json("table/release/release_train_vaild_test.json")
     patch_pred = pd.read_csv(args.predict_csv)
-    patch_pred['src'] = patch_pred['file'].apply(
-        patch2src, args=(src_root,)     
-    )
+    patch_pred['src'] = patch_pred['file'].apply(patch2src, args=(src_root,)     )
     pred_label = []
     gt_label = []
     for t in data_table:
         test = data_table[t]["test"]
         for ti in test:
-            if ti == "dataset/p2/Type0/1426.jpg":
-                continue
-            pred = patch_pred[patch_pred['src'] == ti]
+            pred = patch_pred[patch_pred['src'] == str(src_root/t/f"{ti}.jpg")]
             gt_label.append(int(t[-1]))
 
             if len(pred) == 0:
