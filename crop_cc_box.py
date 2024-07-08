@@ -15,9 +15,15 @@ VISSAVE = Path("connectedcomponents")/"vis"
 PATCHSAVE = Path("dataset")/"patches"
 
 defect_blober = ConnectedComponetBlob(
-    blob_area_lowerbound = 110, 
+    blob_area_lowerbound = 180, 
     min_pixels_per_comp = 0, region_mean = 0, 
-    box_lightcnt_lowerbound = 15
+    box_light_lowerbound = 20
+)
+
+view_blober = ConnectedComponetBlob(
+    blob_area_lowerbound = 100, 
+    min_pixels_per_comp = 0, region_mean = 0, 
+    box_light_lowerbound = 20
 )
 
 def unit_test():
@@ -26,26 +32,11 @@ def unit_test():
     print(imgpath)
     img0 = cv2.imread(str(imgpath), cv2.IMREAD_GRAYSCALE)
     s = time()
-    boxes = defect_blober(img=img0, need_crop=False, topk=5)
+    boxes = view_blober(img=img0, need_crop=False, topk=5)
     print(time() - s)
-    max_area = None 
-    lightest = None
-    b_ok = []
-    for idx, bi in enumerate(boxes):
-        if idx > 0:
-            if bi['area'] < 600 or bi['area']/max_area < 0.1 or bi['avg_light']/lightest < 0.5 : 
-                print(f"to break {bi['area']/max_area}, {bi['avg_light']/lightest}")
-                print(bi)
-                break
-            else:
-                b_ok.append(bi)
-        else:
-            b_ok.append(bi)
-            max_area = bi['area']
-            lightest = bi['avg_light']
-        print(bi)
-    
-    draw_boxes(bg=img0, boxes=b_ok, boxID=True,save_to=VISSAVE/f"{extract_label(imgpath)[-1]}_{imgpath.stem}.jpg", save_log=True)
+    for bi in boxes:
+        print(bi['area'], bi['avg_light'])
+    draw_boxes(bg=img0, boxes=boxes, boxID=True,save_to=VISSAVE/f"{extract_label(imgpath)[-1]}_{imgpath.stem}.jpg", save_log=True)
     
 
 def write_patches():
@@ -83,15 +74,16 @@ def write_patches():
                     print(ti_root/f"{img_ti_i}.jpg", flush=True)
                 if len(boxes) > 0 and ti == "Type0":
                     print(ti_root/f"{img_ti_i}.jpg", flush=True)
+
                 max_area = None 
-                lightest = None
+
                 for idx, (bi, ci) in enumerate(zip(boxes, crops)):
+                    
                     if idx > 0:
-                        if bi['area'] < 600 or bi['area']/max_area < 0.1 or bi['avg_light']/lightest < 0.5 : 
+                        if bi['area']/max_area < 0.3 and bi['area'] < 600: 
                             break
                     else:
                         max_area = bi['area']
-                        lightest = bi['avg_light']
 
                     patch_i_path = str(save_dir/f"{img_ti_i}_{idx}.jpg")
                     cv2.imwrite(patch_i_path, ci)
