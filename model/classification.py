@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Callable
 from tqdm import tqdm
 from time import time
 from pathlib import Path
@@ -12,7 +12,7 @@ from torch.nn import CrossEntropyLoss
 from torch.utils.data import DataLoader
 from torch.optim import Optimizer, Adam
 from .lossfunc import build_cls_criteria, FocalLoss
-from tools.dataset import Big_Data_IMG, Patch_IMG, G_normalizor, extract_label
+from tools.dataset import _Img_Dataset, G_normalizor, extract_label
 from tools.plt_tools import plot_curves
 
 def print_cls_metrics(t:dict):
@@ -47,17 +47,31 @@ def forward_one_epoch(
         model.eval()
         torch.set_grad_enabled(False)
     y = None
+    
     for pi, batch_img, li in tqdm(loader):
-        
+       
         if optr is not None:
             optr.zero_grad()
-        if isinstance(batch_img, list):
-            # patch
-            y = model([patch.to(device=device) for patch in batch_img])
-        elif isinstance(batch_img, torch.Tensor):
-            # full image
-            y = model(batch_img.to(device=device))
         
+        
+        if isinstance(batch_img, torch.Tensor):
+            # full image or independent patch with coo channel 
+            y = model(batch_img.to(device=device))
+        elif isinstance(batch_img, list):
+            # patch
+            if isinstance(batch_img[0], torch.Tensor):
+                if loader.dataset.independent:
+                    # independent patch with coo pos
+                    y = model(batch_img[0].to(device=device), batch_img[1].to(device=device))
+                else:
+                    # dependent patch with coo channel
+                    y = model([patch.to(device=device) for patch in batch_img])
+            elif isinstance(batch_img[0], tuple):
+                # dependent patch with coo pos
+                y = model([(patch.to(device=device), coo.to(device=device)) for patch, coo in batch_img])
+           
+        
+       
         if criteria is not None:
             loss:torch.Tensor = criteria(y, li.to(device=device))
             total_loss += loss.item()
@@ -106,9 +120,9 @@ def forward_one_epoch(
 
 
 def train(
-    dataset:dict[str, Big_Data_IMG],
-    model:torch.nn.Module, early_stop:int=30,
-    epochs:int = 50, batchsize:int = 40, lr:float=1e-3, 
+    dataset:dict[str, _Img_Dataset],model:torch.nn.Module,
+    epochs:int = 50, batchsize:int = 40, lr:float=1e-3, early_stop:int=30,
+    loader_collection:Optional[Callable] = None, 
     cls_loss:str="ce", loss_weight:dict[str, torch.Tensor]=None, focal_gamma:float=2,
     ckpt_dir:Path=Path("ckpt"), model_name:str="model", return_model:bool=True
 ) -> nn.Module | None:
@@ -123,9 +137,7 @@ def train(
         mode:DataLoader(
             dataset=dataset[mode], batch_size=batchsize, 
             shuffle=True, generator=g, 
-            collate_fn=Patch_IMG.collate_fn \
-                if isinstance(dataset[mode], Patch_IMG) \
-                else None
+            collate_fn=loader_collection
         )
         for mode in ['train', 'valid']
     }
@@ -225,12 +237,12 @@ def train(
         return model 
 
 @torch.no_grad()
-def test(model:nn.Module, test_dataset:Big_Data_IMG, dev, batchsize = 40) -> tuple[float, float, float, dict[int, tuple], pd.DataFrame, pd.DataFrame]:
+def test(model:nn.Module, test_dataset:_Img_Dataset, dev, batchsize = 40, loader_collection:Optional[Callable] = None,) -> tuple[float, float, float, dict[int, tuple], pd.DataFrame, pd.DataFrame]:
     
     model = model.eval().to(device=dev)
     testloader = DataLoader(
         dataset=test_dataset, batch_size=batchsize,
-        collate_fn=Patch_IMG.collate_fn if isinstance(test_dataset, Patch_IMG) else None
+        collate_fn=loader_collection
     ) 
 
     _, acc, f1, recall, cls_recall, pred_df = forward_one_epoch(
