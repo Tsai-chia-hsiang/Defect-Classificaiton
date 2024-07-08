@@ -11,7 +11,7 @@ class ConnectedComponetBlob():
         min_pixels_per_comp:int=20, 
         blob_area_lowerbound:int=80, 
         region_mean:float=30,
-        box_lightcnt_lowerbound:float=25,
+        box_light_lowerbound:float=25,
         box_merge_distance:float=10
     ):
         
@@ -20,8 +20,8 @@ class ConnectedComponetBlob():
         self.rmean = region_mean
         self.merge_dist = box_merge_distance
         self.area_lb = blob_area_lowerbound
-        self.box_gray_lb = box_lightcnt_lowerbound
-        self.box_thr = np.array([self.area_lb,  box_lightcnt_lowerbound])
+        self.box_gray_lb = box_light_lowerbound
+        self.box_thr = np.array([self.area_lb,  box_light_lowerbound])
     
     def __call__(self, img:np.ndarray, need_crop:bool=True, topk:int=0) -> list[dict[str, Any]]|tuple[list[dict[str, Any]], list[np.ndarray]]:
 
