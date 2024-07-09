@@ -45,8 +45,6 @@ Marco-F1 score
 ## Use simple resnet34 for classification the connected component patches along with coordinate and vote:
 Marco-F1 score: 
 
-|loss function|baseline|
-|-|-|
-|CE|0.843|
-|WCE|0.876|
-|Focal Loss|0.882|
+|loss function|coordinate positional feature|coordinate channel feature|
+|-|-|-|
+|CE|0.834|0.850|
