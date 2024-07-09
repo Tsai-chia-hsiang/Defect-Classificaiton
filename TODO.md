@@ -1,1 +1,0 @@
-- [x] modify the code to let coordinate (xywh) as a feature with patches
