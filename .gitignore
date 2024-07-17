@@ -10,3 +10,4 @@ ckpt/**/*.pt
 scripts/simi_challenger.sh
 *test*
 connectedcomponents
+move_files.py
