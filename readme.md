@@ -21,6 +21,13 @@ Statistics:
     |Type2|302|34|84|
     |Type3|416|47|116|
 
+## Metrics 
+Marco F1 score:
+
+$F1_{\text{marco}} = \frac{1}{|T|}\displaystyle\sum_{t_i\in T}F1_{t_i}$, where $T=\{\text{Type0}, \text{Type1}, \text{Type2}, \text{Type3} \}$
+
+
+
 ## Method :
 
 ## Use simple resnet50 for classification:
@@ -34,7 +41,7 @@ Statistics:
 - optimizer: Adam
     - initial learning rate : 0.001
 
-Marco-F1 score
+Marco F1 score
 
 |loss function / Dataset|baseline|aug Type1~Type3| down samping Type0 , aug Type1|
 |-|-|-|-|
@@ -43,7 +50,7 @@ Marco-F1 score
 |Focal Loss|0.855|0.883|0.846|
 
 ## Use simple resnet34 for classification the connected component patches along with coordinate and vote:
-Marco-F1 score: 
+Marco F1 score: 
 
 |loss function|coordinate positional feature|coordinate channel feature|
 |-|-|-|
