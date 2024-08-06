@@ -4,7 +4,6 @@
 dataset/**/*.jpg
 dataset/**/*.zip
 dataset/*.csv
-ckpt/**/*.jpg
 ckpt/**/*.csv
 ckpt/**/*.pt
 augmentation/move_files.py
