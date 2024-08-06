@@ -1,13 +1,11 @@
 */*/*.pyc
 */*/*.pt
 .vscode
-table/5foldcv
 dataset/**/*.jpg
 dataset/**/*.zip
+dataset/*.csv
 ckpt/**/*.jpg
 ckpt/**/*.csv
 ckpt/**/*.pt
-scripts/simi_challenger.sh
-*test*
-connectedcomponents
-move_files.py
+augmentation/move_files.py
+augmentation/merge_release.py
