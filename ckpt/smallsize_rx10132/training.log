@@ -1,0 +1,334 @@
+2024-09-04 17:30:31,243 - INFO - dataset:
+  input_size: [256, 156]
+  label_map: ./dataset/label.json
+  table: ./dataset/release_aug_train_valid_t0_down.json
+  test_table: 
+  train_batch: 160
+  val_batch: 256
+device: cuda
+inference_only: False
+model:
+  ckpt: ./ckpt/samllsize_rx10132
+  depth: rx101_32
+  dp: True
+  pretrained: None
+opt:
+  cl_weight: 0.6
+  cls_weight: 2
+  debug: -1
+  epochs: 70
+  lr: 0.001
+  optr: adamw
+  val_epochs: 1
+  warm_up: 0
+seed: 891122
+val_only: False
+2024-09-04 17:30:31,926 - INFO - -- train : full [256, 156] image dataset containing tensor([30844.,  1958., 18278., 25187.]) for ['Type0', 'Type1', 'Type2', 'Type3'] classes --
+2024-09-04 17:30:31,927 - INFO - -- valid : full [256, 156] image dataset containing tensor([7712.,  490., 4570., 6297.]) for ['Type0', 'Type1', 'Type2', 'Type3'] classes --
+2024-09-04 17:30:33,908 - INFO - build rx101_32 from torchvision defalut weights
+2024-09-04 17:30:33,910 - INFO - set ddp=True will ignore the device cpu setting and directly using torch.nn.DataParallel with torch.device('cuda')
+2024-09-04 17:30:34,496 - INFO - Training classification 70 epochs with WCE and contrastive loss
+2024-09-04 17:30:34,497 - INFO - training epoch 0, with classification loss and contrastive loss
+2024-09-04 17:44:38,806 - INFO - training loss : {'cls': 0.3762199132802242, 'contrastive': 0.33385666014455984, 'total': 0.7100765711505433}
+2024-09-04 17:44:38,806 - INFO - validation epoch 0
+2024-09-04 17:46:20,118 - INFO - validation F1 : [0.90366811 0.65183246 0.88249506 0.86805928]; macro : 0.8265137265253585
+2024-09-04 17:46:20,119 - INFO - current best valid f1:0; new best valid f1:0.8265137265253585
+2024-09-04 17:46:20,119 - INFO - save weights to ckpt/samllsize_rx10132/resnextrx101_32_e0.pt
+2024-09-04 17:46:20,746 - INFO - training epoch 1, with classification loss and contrastive loss
+2024-09-04 18:00:21,279 - INFO - training loss : {'cls': 0.14247943239642455, 'contrastive': 0.09574871208065801, 'total': 0.23822814422372157}
+2024-09-04 18:00:21,279 - INFO - validation epoch 1
+2024-09-04 18:02:07,706 - INFO - validation F1 : [0.97252783 0.86138614 0.90924195 0.95348648]; macro : 0.9241606024118065
+2024-09-04 18:02:07,707 - INFO - current best valid f1:0.8265137265253585; new best valid f1:0.9241606024118065
+2024-09-04 18:02:07,707 - INFO - save weights to ckpt/samllsize_rx10132/resnextrx101_32_e1.pt
+2024-09-04 18:02:08,306 - INFO - training epoch 2, with classification loss and contrastive loss
+2024-09-04 18:17:50,257 - INFO - training loss : {'cls': 0.09918192909276043, 'contrastive': 0.07188964188403703, 'total': 0.17107157099960824}
+2024-09-04 18:17:50,258 - INFO - validation epoch 2
+2024-09-04 18:19:46,285 - INFO - validation F1 : [0.99054574 0.8059455  0.95976575 0.96806532]; macro : 0.9310805788347423
+2024-09-04 18:19:46,286 - INFO - current best valid f1:0.9241606024118065; new best valid f1:0.9310805788347423
+2024-09-04 18:19:46,286 - INFO - save weights to ckpt/samllsize_rx10132/resnextrx101_32_e2.pt
+2024-09-04 18:19:46,882 - INFO - training epoch 3, with classification loss and contrastive loss
+2024-09-04 18:35:46,822 - INFO - training loss : {'cls': 0.07667707414650646, 'contrastive': 0.0593944419497424, 'total': 0.13607151637837975}
+2024-09-04 18:35:46,823 - INFO - validation epoch 3
+2024-09-04 18:37:41,507 - INFO - validation F1 : [0.81514408 0.87743191 0.73031718 0.91512027]; macro : 0.8345033610278747
+2024-09-04 18:37:41,507 - INFO - training epoch 4, with classification loss and contrastive loss
+2024-09-04 18:53:41,700 - INFO - training loss : {'cls': 0.05263211178335287, 'contrastive': 0.04276905072864961, 'total': 0.09540116228544236}
+2024-09-04 18:53:41,700 - INFO - validation epoch 4
+2024-09-04 18:55:57,393 - INFO - validation F1 : [0.97916532 0.56293706 0.87671233 0.87654104]; macro : 0.8238389375302084
+2024-09-04 18:55:57,393 - INFO - training epoch 5, with classification loss and contrastive loss
+2024-09-04 19:14:49,009 - INFO - training loss : {'cls': 0.043412969870783226, 'contrastive': 0.03759865593487783, 'total': 0.08101162568264397}
+2024-09-04 19:14:49,009 - INFO - validation epoch 5
+2024-09-04 19:16:53,029 - INFO - validation F1 : [0.96922376 0.53050109 0.89081782 0.8848826 ]; macro : 0.8188563170151366
+2024-09-04 19:16:53,030 - INFO - training epoch 6, with classification loss and contrastive loss
+2024-09-04 19:32:48,336 - INFO - training loss : {'cls': 0.0601344518155883, 'contrastive': 0.044875732034588216, 'total': 0.10501018343635848}
+2024-09-04 19:32:48,336 - INFO - validation epoch 6
+2024-09-04 19:34:41,212 - INFO - validation F1 : [0.98685501 0.8973607  0.90776747 0.92700297]; macro : 0.9297465395621065
+2024-09-04 19:34:41,213 - INFO - training epoch 7, with classification loss and contrastive loss
+2024-09-04 19:50:38,134 - INFO - training loss : {'cls': 0.034811901701936515, 'contrastive': 0.031125591832305313, 'total': 0.06593749361576476}
+2024-09-04 19:50:38,135 - INFO - validation epoch 7
+2024-09-04 19:52:27,918 - INFO - validation F1 : [0.99269129 0.86496028 0.96660295 0.97510078]; macro : 0.9498388247191366
+2024-09-04 19:52:27,918 - INFO - current best valid f1:0.9310805788347423; new best valid f1:0.9498388247191366
+2024-09-04 19:52:27,919 - INFO - save weights to ckpt/samllsize_rx10132/resnextrx101_32_e7.pt
+2024-09-04 19:52:28,493 - INFO - training epoch 8, with classification loss and contrastive loss
+2024-09-04 20:08:09,966 - INFO - training loss : {'cls': 0.020528836647743395, 'contrastive': 0.021298526153170627, 'total': 0.04182736291509009}
+2024-09-04 20:08:09,967 - INFO - validation epoch 8
+2024-09-04 20:10:14,394 - INFO - validation F1 : [0.98294229 0.77822258 0.96302089 0.97475667]; macro : 0.9247356069667247
+2024-09-04 20:10:14,395 - INFO - training epoch 9, with classification loss and contrastive loss
+2024-09-04 20:25:48,588 - INFO - training loss : {'cls': 0.02216732747754037, 'contrastive': 0.02331589073927359, 'total': 0.04548321821131885}
+2024-09-04 20:25:48,588 - INFO - validation epoch 9
+2024-09-04 20:27:46,381 - INFO - validation F1 : [0.96948573 0.92070031 0.86575133 0.90107208]; macro : 0.9142523638540582
+2024-09-04 20:27:46,381 - INFO - training epoch 10, with classification loss and contrastive loss
+2024-09-04 20:43:40,008 - INFO - training loss : {'cls': 0.03216745062907819, 'contrastive': 0.027349773203041643, 'total': 0.05951722376020723}
+2024-09-04 20:43:40,008 - INFO - validation epoch 10
+2024-09-04 20:45:35,898 - INFO - validation F1 : [0.96744601 0.75821398 0.91353135 0.92995725]; macro : 0.8922871494167077
+2024-09-04 20:45:35,899 - INFO - training epoch 11, with classification loss and contrastive loss
+2024-09-04 21:01:17,820 - INFO - training loss : {'cls': 0.03680366817337196, 'contrastive': 0.03138282116422075, 'total': 0.06818648927681685}
+2024-09-04 21:01:17,821 - INFO - validation epoch 11
+2024-09-04 21:04:29,939 - INFO - validation F1 : [0.9851263  0.77777778 0.96427371 0.9621893 ]; macro : 0.9223417718240187
+2024-09-04 21:04:29,940 - INFO - training epoch 12, with classification loss and contrastive loss
+2024-09-04 21:20:27,314 - INFO - training loss : {'cls': 0.01922615275769425, 'contrastive': 0.01891493344261383, 'total': 0.03814108626471071}
+2024-09-04 21:20:27,315 - INFO - validation epoch 12
+2024-09-04 21:22:20,463 - INFO - validation F1 : [0.99370743 0.94313725 0.97746967 0.98516558]; macro : 0.9748699843994522
+2024-09-04 21:22:20,464 - INFO - current best valid f1:0.9498388247191366; new best valid f1:0.9748699843994522
+2024-09-04 21:22:20,464 - INFO - save weights to ckpt/samllsize_rx10132/resnextrx101_32_e12.pt
+2024-09-04 21:22:21,050 - INFO - training epoch 13, with classification loss and contrastive loss
+2024-09-04 21:38:14,102 - INFO - training loss : {'cls': 0.013685499133216943, 'contrastive': 0.015281555988516092, 'total': 0.028967055119913546}
+2024-09-04 21:38:14,102 - INFO - validation epoch 13
+2024-09-04 21:41:30,423 - INFO - validation F1 : [0.97547863 0.63487916 0.95041234 0.94341821]; macro : 0.8760470834333745
+2024-09-04 21:41:30,423 - INFO - training epoch 14, with classification loss and contrastive loss
+2024-09-04 21:57:27,872 - INFO - training loss : {'cls': 0.04508258944540703, 'contrastive': 0.03216394933995003, 'total': 0.07724653894536536}
+2024-09-04 21:57:27,872 - INFO - validation epoch 14
+2024-09-04 21:59:17,019 - INFO - validation F1 : [0.9932096  0.93281402 0.95731373 0.97136019]; macro : 0.9636743844075273
+2024-09-04 21:59:17,019 - INFO - training epoch 15, with classification loss and contrastive loss
+2024-09-04 22:14:50,705 - INFO - training loss : {'cls': 0.013172399930675788, 'contrastive': 0.013907696603375194, 'total': 0.027080096575899257}
+2024-09-04 22:14:50,705 - INFO - validation epoch 15
+2024-09-04 22:16:37,123 - INFO - validation F1 : [0.97556343 0.87695312 0.95316929 0.9575166 ]; macro : 0.9408006134198774
+2024-09-04 22:16:37,124 - INFO - training epoch 16, with classification loss and contrastive loss
+2024-09-04 22:32:28,726 - INFO - training loss : {'cls': 0.019206444629610128, 'contrastive': 0.017959721356075247, 'total': 0.0371661659149939}
+2024-09-04 22:32:28,726 - INFO - validation epoch 16
+2024-09-04 22:34:30,314 - INFO - validation F1 : [0.99260125 0.81917578 0.94974759 0.97138402]; macro : 0.9332271575757611
+2024-09-04 22:34:30,314 - INFO - training epoch 17, with classification loss and contrastive loss
+2024-09-04 22:50:22,686 - INFO - training loss : {'cls': 0.012012813495137385, 'contrastive': 0.012832031696313879, 'total': 0.024844845243401373}
+2024-09-04 22:50:22,686 - INFO - validation epoch 17
+2024-09-04 22:52:24,203 - INFO - validation F1 : [0.90930562 0.78637201 0.8560706  0.77176562]; macro : 0.8308784618500562
+2024-09-04 22:52:24,203 - INFO - training epoch 18, with classification loss and contrastive loss
+2024-09-04 23:08:18,618 - INFO - training loss : {'cls': 0.012910269714136224, 'contrastive': 0.013356492962737394, 'total': 0.026266762630623153}
+2024-09-04 23:08:18,618 - INFO - validation epoch 18
+2024-09-04 23:10:10,626 - INFO - validation F1 : [0.98709217 0.80465503 0.962446   0.97510207]; macro : 0.9323238172285563
+2024-09-04 23:10:10,626 - INFO - training epoch 19, with classification loss and contrastive loss
+2024-09-04 23:27:33,512 - INFO - training loss : {'cls': 0.042276190858568416, 'contrastive': 0.026988549727856106, 'total': 0.06926474048855061}
+2024-09-04 23:27:33,512 - INFO - validation epoch 19
+2024-09-04 23:31:46,062 - INFO - validation F1 : [0.98837665 0.8130217  0.97683184 0.98262594]; macro : 0.9402140326419495
+2024-09-04 23:31:46,062 - INFO - training epoch 20, with classification loss and contrastive loss
+2024-09-04 23:48:18,309 - INFO - training loss : {'cls': 0.0254773633311914, 'contrastive': 0.019660519442394418, 'total': 0.04513788264603833}
+2024-09-04 23:48:18,310 - INFO - validation epoch 20
+2024-09-04 23:50:01,515 - INFO - validation F1 : [0.99773301 0.96825397 0.9909081  0.99188027]; macro : 0.9871938377433879
+2024-09-04 23:50:01,516 - INFO - current best valid f1:0.9748699843994522; new best valid f1:0.9871938377433879
+2024-09-04 23:50:01,516 - INFO - save weights to ckpt/samllsize_rx10132/resnextrx101_32_e20.pt
+2024-09-04 23:50:02,106 - INFO - training epoch 21, with classification loss and contrastive loss
+2024-09-05 00:05:44,091 - INFO - training loss : {'cls': 0.0059432787363767415, 'contrastive': 0.006997769388417974, 'total': 0.012941048098794856}
+2024-09-05 00:05:44,092 - INFO - validation epoch 21
+2024-09-05 00:07:41,091 - INFO - validation F1 : [0.99701531 0.97302697 0.99332969 0.99300477]; macro : 0.9890941858999849
+2024-09-05 00:07:41,092 - INFO - current best valid f1:0.9871938377433879; new best valid f1:0.9890941858999849
+2024-09-05 00:07:41,092 - INFO - save weights to ckpt/samllsize_rx10132/resnextrx101_32_e21.pt
+2024-09-05 00:07:41,679 - INFO - training epoch 22, with classification loss and contrastive loss
+2024-09-05 00:22:09,413 - INFO - training loss : {'cls': 0.0034302276932751128, 'contrastive': 0.00553318788348762, 'total': 0.008963415573986942}
+2024-09-05 00:22:09,413 - INFO - validation epoch 22
+2024-09-05 00:23:30,998 - INFO - validation F1 : [0.98771467 0.90258449 0.94085155 0.96269872]; macro : 0.9484623596566597
+2024-09-05 00:23:30,998 - INFO - training epoch 23, with classification loss and contrastive loss
+2024-09-05 00:35:50,327 - INFO - training loss : {'cls': 0.013900903121928607, 'contrastive': 0.014769970608806846, 'total': 0.028670873641690332}
+2024-09-05 00:35:50,328 - INFO - validation epoch 23
+2024-09-05 00:37:11,872 - INFO - validation F1 : [0.97031949 0.78230703 0.92590425 0.96206156]; macro : 0.9101480813906351
+2024-09-05 00:37:11,872 - INFO - training epoch 24, with classification loss and contrastive loss
+2024-09-05 00:49:31,489 - INFO - training loss : {'cls': 0.016133121495002428, 'contrastive': 0.015320629694766615, 'total': 0.03145375109975312}
+2024-09-05 00:49:31,490 - INFO - validation epoch 24
+2024-09-05 00:50:53,772 - INFO - validation F1 : [0.99604794 0.95686275 0.988895   0.99189704]; macro : 0.9834256825351426
+2024-09-05 00:50:53,772 - INFO - training epoch 25, with classification loss and contrastive loss
+2024-09-05 01:03:14,570 - INFO - training loss : {'cls': 0.0034902856957470057, 'contrastive': 0.0054074411769682385, 'total': 0.008897726898046151}
+2024-09-05 01:03:14,570 - INFO - validation epoch 25
+2024-09-05 01:04:36,926 - INFO - validation F1 : [0.99425102 0.96722939 0.97144137 0.98199827]; macro : 0.9787300132517175
+2024-09-05 01:04:36,926 - INFO - training epoch 26, with classification loss and contrastive loss
+2024-09-05 01:16:56,392 - INFO - training loss : {'cls': 0.007629026646837671, 'contrastive': 0.00881978267793494, 'total': 0.0164488093100526}
+2024-09-05 01:16:56,392 - INFO - validation epoch 26
+2024-09-05 01:18:17,845 - INFO - validation F1 : [0.99368475 0.97841727 0.96082662 0.97165109]; macro : 0.9761449312280085
+2024-09-05 01:18:17,845 - INFO - training epoch 27, with classification loss and contrastive loss
+2024-09-05 01:30:36,279 - INFO - training loss : {'cls': 0.0076974564014991535, 'contrastive': 0.009555699989437613, 'total': 0.017253156319857587}
+2024-09-05 01:30:36,279 - INFO - validation epoch 27
+2024-09-05 01:31:57,688 - INFO - validation F1 : [0.99154784 0.91698842 0.95002859 0.97153523]; macro : 0.9575250193834249
+2024-09-05 01:31:57,688 - INFO - training epoch 28, with classification loss and contrastive loss
+2024-09-05 01:44:17,407 - INFO - training loss : {'cls': 0.021585378066109225, 'contrastive': 0.01706211842101092, 'total': 0.03864749644730201}
+2024-09-05 01:44:17,407 - INFO - validation epoch 28
+2024-09-05 01:45:37,586 - INFO - validation F1 : [0.96461998 0.90769231 0.91585694 0.97013372]; macro : 0.939575735391895
+2024-09-05 01:45:37,586 - INFO - training epoch 29, with classification loss and contrastive loss
+2024-09-05 01:57:56,892 - INFO - training loss : {'cls': 0.005709218723693442, 'contrastive': 0.007091257712692694, 'total': 0.012800476434649074}
+2024-09-05 01:57:56,892 - INFO - validation epoch 29
+2024-09-05 01:59:18,688 - INFO - validation F1 : [0.93693197 0.80871671 0.81695431 0.91305472]; macro : 0.8689144262802416
+2024-09-05 01:59:18,688 - INFO - training epoch 30, with classification loss and contrastive loss
+2024-09-05 02:11:39,143 - INFO - training loss : {'cls': 0.0034922633705976205, 'contrastive': 0.00473929496299162, 'total': 0.008231558395348877}
+2024-09-05 02:11:39,143 - INFO - validation epoch 30
+2024-09-05 02:13:01,488 - INFO - validation F1 : [0.82012017 0.         0.71625035 0.85411865]; macro : 0.5976222925380622
+2024-09-05 02:13:01,488 - INFO - training epoch 31, with classification loss and contrastive loss
+2024-09-05 02:25:24,533 - INFO - training loss : {'cls': 0.015128517685977559, 'contrastive': 0.01374525749249814, 'total': 0.028873775201066685}
+2024-09-05 02:25:24,534 - INFO - validation epoch 31
+2024-09-05 02:26:45,710 - INFO - validation F1 : [0.95825478 0.9010989  0.90092757 0.9702663 ]; macro : 0.9326368871278042
+2024-09-05 02:26:45,710 - INFO - training epoch 32, with classification loss and contrastive loss
+2024-09-05 02:39:04,414 - INFO - training loss : {'cls': 0.010657500480177001, 'contrastive': 0.010086984294369838, 'total': 0.020744484827589865}
+2024-09-05 02:39:04,414 - INFO - validation epoch 32
+2024-09-05 02:40:25,526 - INFO - validation F1 : [0.99501521 0.93653846 0.97405634 0.98295185]; macro : 0.9721404676970574
+2024-09-05 02:40:25,526 - INFO - training epoch 33, with classification loss and contrastive loss
+2024-09-05 02:52:44,328 - INFO - training loss : {'cls': 0.005894832200089037, 'contrastive': 0.007204546949908473, 'total': 0.013099379105516163}
+2024-09-05 02:52:44,328 - INFO - validation epoch 33
+2024-09-05 02:54:05,276 - INFO - validation F1 : [0.99012474 0.92293054 0.94093501 0.96154739]; macro : 0.9538844192370135
+2024-09-05 02:54:05,276 - INFO - training epoch 34, with classification loss and contrastive loss
+2024-09-05 03:06:24,202 - INFO - training loss : {'cls': 0.006238547160557569, 'contrastive': 0.007328087765920277, 'total': 0.013566634942512677}
+2024-09-05 03:06:24,202 - INFO - validation epoch 34
+2024-09-05 03:07:44,983 - INFO - validation F1 : [0.99799001 0.98582996 0.99074578 0.99234572]; macro : 0.991727868494532
+2024-09-05 03:07:44,984 - INFO - current best valid f1:0.9890941858999849; new best valid f1:0.991727868494532
+2024-09-05 03:07:44,984 - INFO - save weights to ckpt/samllsize_rx10132/resnextrx101_32_e34.pt
+2024-09-05 03:07:45,540 - INFO - training epoch 35, with classification loss and contrastive loss
+2024-09-05 03:20:03,872 - INFO - training loss : {'cls': 0.006397157057777524, 'contrastive': 0.005966439931233797, 'total': 0.012363596977014057}
+2024-09-05 03:20:03,872 - INFO - validation epoch 35
+2024-09-05 03:21:25,399 - INFO - validation F1 : [0.84997541 0.60468876 0.71197588 0.89942847]; macro : 0.7665171316711877
+2024-09-05 03:21:25,400 - INFO - training epoch 36, with classification loss and contrastive loss
+2024-09-05 03:33:44,316 - INFO - training loss : {'cls': 0.011199416620502558, 'contrastive': 0.011034982116703146, 'total': 0.02223439879714661}
+2024-09-05 03:33:44,316 - INFO - validation epoch 36
+2024-09-05 03:35:04,666 - INFO - validation F1 : [0.99591572 0.96347483 0.98445596 0.99041888]; macro : 0.983566346053555
+2024-09-05 03:35:04,666 - INFO - training epoch 37, with classification loss and contrastive loss
+2024-09-05 03:47:23,157 - INFO - training loss : {'cls': 0.011459038555749465, 'contrastive': 0.009793138434487158, 'total': 0.021252177052749545}
+2024-09-05 03:47:23,158 - INFO - validation epoch 37
+2024-09-05 03:48:45,313 - INFO - validation F1 : [0.96081241 0.80578512 0.9329808  0.9489533 ]; macro : 0.9121329094817382
+2024-09-05 03:48:45,313 - INFO - training epoch 38, with classification loss and contrastive loss
+2024-09-05 04:01:03,871 - INFO - training loss : {'cls': 0.0035679863274024645, 'contrastive': 0.0043939400565158986, 'total': 0.007961926432552712}
+2024-09-05 04:01:03,871 - INFO - validation epoch 38
+2024-09-05 04:02:25,267 - INFO - validation F1 : [0.99618543 0.96347483 0.98363194 0.9895371 ]; macro : 0.9832073224679403
+2024-09-05 04:02:25,268 - INFO - training epoch 39, with classification loss and contrastive loss
+2024-09-05 04:14:43,659 - INFO - training loss : {'cls': 0.003113762325142287, 'contrastive': 0.003907582310746169, 'total': 0.007021344634310903}
+2024-09-05 04:14:43,659 - INFO - validation epoch 39
+2024-09-05 04:16:03,945 - INFO - validation F1 : [0.99611298 0.95968535 0.97944216 0.98691471]; macro : 0.9805388002680171
+2024-09-05 04:16:03,945 - INFO - training epoch 40, with classification loss and contrastive loss
+2024-09-05 04:28:22,600 - INFO - training loss : {'cls': 0.014343238321190737, 'contrastive': 0.01283341055846495, 'total': 0.027176648854449755}
+2024-09-05 04:28:22,600 - INFO - validation epoch 40
+2024-09-05 04:29:43,227 - INFO - validation F1 : [0.99786145 0.98174442 0.9922311  0.99316484]; macro : 0.9912504514486071
+2024-09-05 04:29:43,227 - INFO - training epoch 41, with classification loss and contrastive loss
+2024-09-05 04:42:02,078 - INFO - training loss : {'cls': 0.004001147563115352, 'contrastive': 0.005262226497097777, 'total': 0.009263374087988857}
+2024-09-05 04:42:02,079 - INFO - validation epoch 41
+2024-09-05 04:43:22,171 - INFO - validation F1 : [0.98799204 0.87222222 0.96077992 0.97587772]; macro : 0.9492179739460035
+2024-09-05 04:43:22,171 - INFO - training epoch 42, with classification loss and contrastive loss
+2024-09-05 04:55:41,611 - INFO - training loss : {'cls': 0.006833257267294401, 'contrastive': 0.007567277174062232, 'total': 0.014400534395245645}
+2024-09-05 04:55:41,611 - INFO - validation epoch 42
+2024-09-05 04:57:03,055 - INFO - validation F1 : [0.99695694 0.97297297 0.98990121 0.99284806]; macro : 0.9881697963654994
+2024-09-05 04:57:03,056 - INFO - training epoch 43, with classification loss and contrastive loss
+2024-09-05 05:09:21,997 - INFO - training loss : {'cls': 0.006018198253374151, 'contrastive': 0.006396980181203837, 'total': 0.012415178438888974}
+2024-09-05 05:09:21,997 - INFO - validation epoch 43
+2024-09-05 05:10:43,263 - INFO - validation F1 : [0.01211496 0.         0.38847331 0.02012262]; macro : 0.1051777234740439
+2024-09-05 05:10:43,264 - INFO - training epoch 44, with classification loss and contrastive loss
+2024-09-05 05:23:01,646 - INFO - training loss : {'cls': 0.006641503714803979, 'contrastive': 0.006440430208835979, 'total': 0.013081933898291117}
+2024-09-05 05:23:01,647 - INFO - validation epoch 44
+2024-09-05 05:24:21,674 - INFO - validation F1 : [0.99721123 0.98284561 0.98870302 0.99169462]; macro : 0.9901136201579733
+2024-09-05 05:24:21,675 - INFO - training epoch 45, with classification loss and contrastive loss
+2024-09-05 05:36:41,097 - INFO - training loss : {'cls': 0.005162029391950454, 'contrastive': 0.0049942391396907895, 'total': 0.010156268491854395}
+2024-09-05 05:36:41,097 - INFO - validation epoch 45
+2024-09-05 05:38:01,994 - INFO - validation F1 : [0.85490877 0.03212851 0.68859342 0.81499043]; macro : 0.597655284207709
+2024-09-05 05:38:01,994 - INFO - training epoch 46, with classification loss and contrastive loss
+2024-09-05 05:50:21,019 - INFO - training loss : {'cls': 0.008588351389640954, 'contrastive': 0.008925622059440546, 'total': 0.017513973429430396}
+2024-09-05 05:50:21,020 - INFO - validation epoch 46
+2024-09-05 05:51:42,002 - INFO - validation F1 : [0.98365391 0.88432836 0.96466279 0.97028125]; macro : 0.9507315770417277
+2024-09-05 05:51:42,002 - INFO - training epoch 47, with classification loss and contrastive loss
+2024-09-05 06:04:01,185 - INFO - training loss : {'cls': 0.005770436132935499, 'contrastive': 0.006116939306158033, 'total': 0.01188737549855381}
+2024-09-05 06:04:01,185 - INFO - validation epoch 47
+2024-09-05 06:05:23,014 - INFO - validation F1 : [0.99805649 0.98585859 0.99475295 0.9947469 ]; macro : 0.9933537311338523
+2024-09-05 06:05:23,015 - INFO - current best valid f1:0.991727868494532; new best valid f1:0.9933537311338523
+2024-09-05 06:05:23,015 - INFO - save weights to ckpt/samllsize_rx10132/resnextrx101_32_e47.pt
+2024-09-05 06:05:23,568 - INFO - training epoch 48, with classification loss and contrastive loss
+2024-09-05 06:17:42,584 - INFO - training loss : {'cls': 0.010316071137006003, 'contrastive': 0.007995232401271623, 'total': 0.018311303423223107}
+2024-09-05 06:17:42,584 - INFO - validation epoch 48
+2024-09-05 06:19:04,006 - INFO - validation F1 : [0.96054842 0.95387841 0.9143544  0.9771141 ]; macro : 0.9514738344997874
+2024-09-05 06:19:04,006 - INFO - training epoch 49, with classification loss and contrastive loss
+2024-09-05 06:31:23,190 - INFO - training loss : {'cls': 0.001092956890758441, 'contrastive': 0.0019073424998588195, 'total': 0.003000299409301189}
+2024-09-05 06:31:23,191 - INFO - validation epoch 49
+2024-09-05 06:32:44,486 - INFO - validation F1 : [0.99818582 0.98288016 0.99474951 0.99498767]; macro : 0.9927007901182583
+2024-09-05 06:32:44,486 - INFO - training epoch 50, with classification loss and contrastive loss
+2024-09-05 06:45:03,574 - INFO - training loss : {'cls': 0.006715660114136214, 'contrastive': 0.007206832503757963, 'total': 0.01392249256427989}
+2024-09-05 06:45:03,574 - INFO - validation epoch 50
+2024-09-05 06:46:23,414 - INFO - validation F1 : [0.06837821 0.15413534 0.4364852  0.54924548]; macro : 0.3020610554792542
+2024-09-05 06:46:23,415 - INFO - training epoch 51, with classification loss and contrastive loss
+2024-09-05 06:58:42,246 - INFO - training loss : {'cls': 0.00375844626637599, 'contrastive': 0.004997273964006889, 'total': 0.008755720289561342}
+2024-09-05 06:58:42,247 - INFO - validation epoch 51
+2024-09-05 07:00:04,011 - INFO - validation F1 : [0.98382218 0.98178138 0.95987362 0.98626396]; macro : 0.9779352816532827
+2024-09-05 07:00:04,011 - INFO - training epoch 52, with classification loss and contrastive loss
+2024-09-05 07:12:22,402 - INFO - training loss : {'cls': 0.004773392759646375, 'contrastive': 0.005044876624820994, 'total': 0.009818269397191971}
+2024-09-05 07:12:22,402 - INFO - validation epoch 52
+2024-09-05 07:13:44,396 - INFO - validation F1 : [0.99436273 0.93834297 0.97715368 0.98424452]; macro : 0.9735259761764454
+2024-09-05 07:13:44,397 - INFO - training epoch 53, with classification loss and contrastive loss
+2024-09-05 07:26:04,368 - INFO - training loss : {'cls': 0.010223610034824875, 'contrastive': 0.008783310551374452, 'total': 0.01900692068493949}
+2024-09-05 07:26:04,369 - INFO - validation epoch 53
+2024-09-05 07:27:26,750 - INFO - validation F1 : [0.99585385 0.93924783 0.98581405 0.98792097]; macro : 0.9772091749368382
+2024-09-05 07:27:26,750 - INFO - training epoch 54, with classification loss and contrastive loss
+2024-09-05 07:39:45,882 - INFO - training loss : {'cls': 0.012340703370481678, 'contrastive': 0.007801822588920208, 'total': 0.02014252596052361}
+2024-09-05 07:39:45,882 - INFO - validation epoch 54
+2024-09-05 07:41:06,896 - INFO - validation F1 : [0.99240408 0.98373984 0.97925846 0.9861803 ]; macro : 0.9853956691523121
+2024-09-05 07:41:06,896 - INFO - training epoch 55, with classification loss and contrastive loss
+2024-09-05 07:53:27,178 - INFO - training loss : {'cls': 0.0024248027971701972, 'contrastive': 0.0033397339666467176, 'total': 0.005764536752478252}
+2024-09-05 07:53:27,178 - INFO - validation epoch 55
+2024-09-05 07:54:48,778 - INFO - validation F1 : [0.99301333 0.88684453 0.96236559 0.97876036]; macro : 0.9552459518138502
+2024-09-05 07:54:48,778 - INFO - training epoch 56, with classification loss and contrastive loss
+2024-09-05 08:07:08,526 - INFO - training loss : {'cls': 0.0027244914534114597, 'contrastive': 0.0035339754435089322, 'total': 0.00625846687206859}
+2024-09-05 08:07:08,526 - INFO - validation epoch 56
+2024-09-05 08:08:30,348 - INFO - validation F1 : [0.88362349 0.86887115 0.77261945 0.91510246]; macro : 0.8600541393124355
+2024-09-05 08:08:30,349 - INFO - training epoch 57, with classification loss and contrastive loss
+2024-09-05 08:20:49,651 - INFO - training loss : {'cls': 0.006358764007590635, 'contrastive': 0.006696330528869309, 'total': 0.013055094576870334}
+2024-09-05 08:20:49,652 - INFO - validation epoch 57
+2024-09-05 08:22:11,872 - INFO - validation F1 : [0.7547917  0.15789474 0.6232999  0.78967569]; macro : 0.5814155065977864
+2024-09-05 08:22:11,872 - INFO - training epoch 58, with classification loss and contrastive loss
+2024-09-05 08:34:31,514 - INFO - training loss : {'cls': 0.006797594409039603, 'contrastive': 0.006466404273522293, 'total': 0.013263998768178778}
+2024-09-05 08:34:31,514 - INFO - validation epoch 58
+2024-09-05 08:35:53,288 - INFO - validation F1 : [0.99585653 0.96435644 0.9868594  0.99123506]; macro : 0.9845768558430743
+2024-09-05 08:35:53,288 - INFO - training epoch 59, with classification loss and contrastive loss
+2024-09-05 08:48:12,797 - INFO - training loss : {'cls': 0.0008915829490478375, 'contrastive': 0.0018211830559589355, 'total': 0.002712766006629355}
+2024-09-05 08:48:12,797 - INFO - validation epoch 59
+2024-09-05 08:49:34,114 - INFO - validation F1 : [0.99115387 0.84580703 0.94426532 0.96842433]; macro : 0.9374126367854583
+2024-09-05 08:49:34,114 - INFO - training epoch 60, with classification loss and contrastive loss
+2024-09-05 09:01:53,160 - INFO - training loss : {'cls': 0.0010241818988300899, 'contrastive': 0.0019001701567198071, 'total': 0.0029243520481025036}
+2024-09-05 09:01:53,160 - INFO - validation epoch 60
+2024-09-05 09:03:14,791 - INFO - validation F1 : [0.84941683 0.64569083 0.6142221  0.61968435]; macro : 0.6822535298849195
+2024-09-05 09:03:14,792 - INFO - training epoch 61, with classification loss and contrastive loss
+2024-09-05 09:15:34,044 - INFO - training loss : {'cls': 0.010460857250069797, 'contrastive': 0.008724763375217943, 'total': 0.019185620626149404}
+2024-09-05 09:15:34,044 - INFO - validation epoch 61
+2024-09-05 09:16:54,591 - INFO - validation F1 : [0.47485426 0.29065744 0.46443472 0.38175979]; macro : 0.40292655450079473
+2024-09-05 09:16:54,592 - INFO - training epoch 62, with classification loss and contrastive loss
+2024-09-05 09:29:13,398 - INFO - training loss : {'cls': 0.010182729212025916, 'contrastive': 0.008848381494959916, 'total': 0.019031110812428115}
+2024-09-05 09:29:13,398 - INFO - validation epoch 62
+2024-09-05 09:30:35,107 - INFO - validation F1 : [0.99501844 0.97205589 0.97247911 0.98221033]; macro : 0.9804409406406531
+2024-09-05 09:30:35,107 - INFO - training epoch 63, with classification loss and contrastive loss
+2024-09-05 09:42:55,029 - INFO - training loss : {'cls': 0.001882172175320618, 'contrastive': 0.0029173399812021895, 'total': 0.004799512148800659}
+2024-09-05 09:42:55,030 - INFO - validation epoch 63
+2024-09-05 09:44:15,536 - INFO - validation F1 : [0.45415544 0.         0.44938515 0.27306374]; macro : 0.29415108246932126
+2024-09-05 09:44:15,537 - INFO - training epoch 64, with classification loss and contrastive loss
+2024-09-05 09:56:36,636 - INFO - training loss : {'cls': 0.0013601686981724993, 'contrastive': 0.002039113428467189, 'total': 0.0033992821296148683}
+2024-09-05 09:56:36,636 - INFO - validation epoch 64
+2024-09-05 09:57:57,175 - INFO - validation F1 : [0.99838051 0.98880977 0.99387577 0.99522825]; macro : 0.9940735736669075
+2024-09-05 09:57:57,176 - INFO - current best valid f1:0.9933537311338523; new best valid f1:0.9940735736669075
+2024-09-05 09:57:57,176 - INFO - save weights to ckpt/samllsize_rx10132/resnextrx101_32_e64.pt
+2024-09-05 09:57:57,732 - INFO - training epoch 65, with classification loss and contrastive loss
+2024-09-05 10:10:18,149 - INFO - training loss : {'cls': 0.008872665900803602, 'contrastive': 0.007295391454159782, 'total': 0.016168057241861534}
+2024-09-05 10:10:18,149 - INFO - validation epoch 65
+2024-09-05 10:11:40,153 - INFO - validation F1 : [0.99479167 0.96806387 0.9844526  0.99105002]; macro : 0.9845895412312762
+2024-09-05 10:11:40,153 - INFO - training epoch 66, with classification loss and contrastive loss
+2024-09-05 10:24:00,505 - INFO - training loss : {'cls': 0.004224593238972311, 'contrastive': 0.004923253401674355, 'total': 0.009147846637872784}
+2024-09-05 10:24:00,505 - INFO - validation epoch 66
+2024-09-05 10:25:21,404 - INFO - validation F1 : [0.97257932 0.86769231 0.90907132 0.9318445 ]; macro : 0.9202968613618568
+2024-09-05 10:25:21,404 - INFO - training epoch 67, with classification loss and contrastive loss
+2024-09-05 10:37:40,573 - INFO - training loss : {'cls': 0.0021793857054350114, 'contrastive': 0.0028500777576014303, 'total': 0.005029463466300305}
+2024-09-05 10:37:40,573 - INFO - validation epoch 67
+2024-09-05 10:39:02,410 - INFO - validation F1 : [0.99243017 0.97477296 0.94848359 0.96186962]; macro : 0.9693890849313178
+2024-09-05 10:39:02,410 - INFO - training epoch 68, with classification loss and contrastive loss
+2024-09-05 10:51:21,642 - INFO - training loss : {'cls': 0.00043357011755420485, 'contrastive': 0.0009468193115418227, 'total': 0.0013803894269919558}
+2024-09-05 10:51:21,642 - INFO - validation epoch 68
+2024-09-05 10:52:43,414 - INFO - validation F1 : [0.99889832 0.98977505 0.99606901 0.99642033]; macro : 0.9952906789744003
+2024-09-05 10:52:43,414 - INFO - current best valid f1:0.9940735736669075; new best valid f1:0.9952906789744003
+2024-09-05 10:52:43,414 - INFO - save weights to ckpt/samllsize_rx10132/resnextrx101_32_e68.pt
+2024-09-05 10:52:43,966 - INFO - training epoch 69, with classification loss and contrastive loss
+2024-09-05 11:05:03,317 - INFO - training loss : {'cls': 7.464028121701153e-05, 'contrastive': 0.00048634706676544813, 'total': 0.0005609873467652248}
+2024-09-05 11:05:03,317 - INFO - validation epoch 69
+2024-09-05 11:06:23,593 - INFO - validation F1 : [0.99915732 0.99183673 0.99618196 0.99665712]; macro : 0.9959582822152406
+2024-09-05 11:06:23,594 - INFO - current best valid f1:0.9952906789744003; new best valid f1:0.9959582822152406
+2024-09-05 11:06:23,594 - INFO - save weights to ckpt/samllsize_rx10132/resnextrx101_32_e69.pt

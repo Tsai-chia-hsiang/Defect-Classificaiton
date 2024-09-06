@@ -1,0 +1,2 @@
+2024-09-04 17:13:24,400 - INFO - -- test : full [256, 156] image dataset containing tensor([285.,  10.,  84., 116.]) for ['Type0', 'Type1', 'Type2', 'Type3'] classes --
+2024-09-04 17:13:56,138 - INFO - load pretrained rx101_64 from ckpt/smallsize_rx10164/resnextrx101_64_e22.pt

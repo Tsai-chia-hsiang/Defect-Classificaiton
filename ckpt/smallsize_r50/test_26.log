@@ -1,0 +1,4 @@
+2024-09-04 21:38:35,389 - INFO - -- test : full [256, 156] image dataset containing tensor([285.,  10.,  84., 116.]) for ['Type0', 'Type1', 'Type2', 'Type3'] classes --
+2024-09-04 21:38:39,166 - INFO - load pretrained r50 from ckpt/smallsize_r50/resnextr50_e26.pt
+2024-09-04 21:38:39,166 - INFO - set ddp=True will ignore the device cpu setting and directly using torch.nn.DataParallel with torch.device('cuda')
+2024-09-04 21:39:53,710 - INFO - macro F1 : 0.9177535882565251
