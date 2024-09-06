@@ -1,0 +1,29 @@
+device: cuda:0
+inference_only: False
+val_only: False
+
+dataset:
+  input_size: [256, 156]
+  label_map: ./dataset/label.json
+  table: ./dataset/runtime_table/release_aug_train_valid_t0_down.json
+  test_table: ./dataset/runtime_table/release_test_full.json
+  train_batch: 400
+  val_batch: 128
+
+model:
+  ckpt: ./ckpt/smallsize_r50
+  dp: True
+  depth: "r50"
+  pretrained: ""
+
+opt:
+  cl_weight: 0.6
+  cls_weight: 2
+  debug: -1
+  epochs: 50
+  lr: 0.001
+  optr: adamw
+  val_epochs: 1
+  warm_up: 0
+
+seed: 891122

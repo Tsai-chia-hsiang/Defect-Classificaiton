@@ -1,0 +1,29 @@
+device: cuda
+seed : 891122
+val_only: False
+inference_only: False
+
+dataset:
+  table: ./dataset/runtime_table/release_aug_train_valid_t0_down.json
+  test_table: ./dataset/runtime_table/release_test_full.json
+  label_map: "./dataset/label.json"
+  input_size: [256, 156]
+  train_batch: 160
+  val_batch: 128
+
+model:
+  depth: "rx101_32"
+  pretrained: null
+  dp: True
+  ckpt: "./ckpt/smallsize_rx10132"
+
+opt:
+  lr: 0.001
+  epochs: 70
+  optr: "adamw"
+  val_epochs: 1
+  warm_up: 0
+  cls_weight: 2
+  cl_weight: 0.6
+  debug: -1
+
