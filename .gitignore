@@ -1,0 +1,6 @@
+dataset/**/*.jpg
+dataset/*.zip
+ckpt/**/*.pt
+**/predict.csv
+**/__pycache__/
+**/events*
